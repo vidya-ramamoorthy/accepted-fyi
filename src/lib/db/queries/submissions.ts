@@ -2,7 +2,14 @@ import { eq, and, ilike, gte, lte, sql, desc } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { admissionSubmissions, schools } from "@/lib/db/schema";
 import { escapeLikePattern } from "@/lib/utils/escape-like";
-import type { AdmissionDecision } from "@/types/database";
+import type {
+  AdmissionDecision,
+  HighSchoolType,
+  GeographicClassification,
+  ScholarshipType,
+  AttendanceIntent,
+  WaitlistOutcome,
+} from "@/types/database";
 
 const MAX_PAGE_SIZE = 100;
 
@@ -18,6 +25,15 @@ const submissionWithSchoolFields = {
   intendedMajor: admissionSubmissions.intendedMajor,
   stateOfResidence: admissionSubmissions.stateOfResidence,
   extracurriculars: admissionSubmissions.extracurriculars,
+  highSchoolType: admissionSubmissions.highSchoolType,
+  firstGeneration: admissionSubmissions.firstGeneration,
+  legacyStatus: admissionSubmissions.legacyStatus,
+  financialAidApplied: admissionSubmissions.financialAidApplied,
+  geographicClassification: admissionSubmissions.geographicClassification,
+  apCoursesCount: admissionSubmissions.apCoursesCount,
+  scholarshipOffered: admissionSubmissions.scholarshipOffered,
+  willAttend: admissionSubmissions.willAttend,
+  waitlistOutcome: admissionSubmissions.waitlistOutcome,
   verificationTier: admissionSubmissions.verificationTier,
   createdAt: admissionSubmissions.createdAt,
   schoolName: schools.name,
@@ -50,6 +66,15 @@ export async function createSubmission(data: {
   intendedMajor: string | null;
   stateOfResidence: string;
   extracurriculars: string[];
+  highSchoolType: HighSchoolType | null;
+  firstGeneration: boolean | null;
+  legacyStatus: boolean | null;
+  financialAidApplied: boolean | null;
+  geographicClassification: GeographicClassification | null;
+  apCoursesCount: number | null;
+  scholarshipOffered: ScholarshipType | null;
+  willAttend: AttendanceIntent | null;
+  waitlistOutcome: WaitlistOutcome | null;
 }) {
   const db = getDb();
   const [submission] = await db
@@ -67,7 +92,16 @@ export async function createSubmission(data: {
       intendedMajor: data.intendedMajor,
       stateOfResidence: data.stateOfResidence,
       extracurriculars: data.extracurriculars,
-      submissionStatus: "pending_review",
+      highSchoolType: data.highSchoolType,
+      firstGeneration: data.firstGeneration,
+      legacyStatus: data.legacyStatus,
+      financialAidApplied: data.financialAidApplied,
+      geographicClassification: data.geographicClassification,
+      apCoursesCount: data.apCoursesCount,
+      scholarshipOffered: data.scholarshipOffered,
+      willAttend: data.willAttend,
+      waitlistOutcome: data.waitlistOutcome,
+      submissionStatus: "visible",
     })
     .returning();
 

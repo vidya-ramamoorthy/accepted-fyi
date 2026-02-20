@@ -141,6 +141,15 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
               verificationTier={submission.verificationTier}
               extracurriculars={submission.extracurriculars}
               createdAt={submission.createdAt}
+              highSchoolType={submission.highSchoolType}
+              firstGeneration={submission.firstGeneration}
+              legacyStatus={submission.legacyStatus}
+              financialAidApplied={submission.financialAidApplied}
+              geographicClassification={submission.geographicClassification}
+              apCoursesCount={submission.apCoursesCount}
+              scholarshipOffered={submission.scholarshipOffered}
+              willAttend={submission.willAttend}
+              waitlistOutcome={submission.waitlistOutcome}
             />
           ))}
         </div>

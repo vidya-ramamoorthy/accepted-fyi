@@ -1,6 +1,11 @@
 export type VerificationTier = "bronze" | "silver" | "gold";
 export type AdmissionDecision = "accepted" | "rejected" | "waitlisted" | "deferred";
 export type SubmissionStatus = "pending_review" | "visible" | "hidden" | "flagged";
+export type HighSchoolType = "public" | "private" | "charter" | "magnet" | "homeschool" | "international";
+export type GeographicClassification = "rural" | "suburban" | "urban";
+export type ScholarshipType = "none" | "merit" | "need_based" | "both";
+export type AttendanceIntent = "yes" | "no" | "undecided";
+export type WaitlistOutcome = "accepted_off_waitlist" | "rejected_off_waitlist" | "withdrew";
 
 export interface UserProfile {
   id: string;
@@ -38,6 +43,15 @@ export interface AdmissionSubmission {
   intendedMajor: string | null;
   applicationRound: "early_decision" | "early_action" | "regular" | "rolling";
   stateOfResidence: string;
+  highSchoolType: HighSchoolType | null;
+  firstGeneration: boolean | null;
+  legacyStatus: boolean | null;
+  financialAidApplied: boolean | null;
+  geographicClassification: GeographicClassification | null;
+  apCoursesCount: number | null;
+  scholarshipOffered: ScholarshipType | null;
+  willAttend: AttendanceIntent | null;
+  waitlistOutcome: WaitlistOutcome | null;
   verificationTier: VerificationTier;
   submissionStatus: SubmissionStatus;
   flagCount: number;

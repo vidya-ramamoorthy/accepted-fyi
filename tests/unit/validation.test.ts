@@ -188,4 +188,133 @@ describe("validateSubmission", () => {
       expect(result.success).toBe(true);
     }
   });
+
+  it("should accept valid high school types", () => {
+    const types = ["public", "private", "charter", "magnet", "homeschool", "international"];
+    for (const hsType of types) {
+      const result = validateSubmission({ ...validInput, highSchoolType: hsType });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.highSchoolType).toBe(hsType);
+      }
+    }
+  });
+
+  it("should reject invalid high school type", () => {
+    const result = validateSubmission({ ...validInput, highSchoolType: "boarding" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.field === "highSchoolType")).toBe(true);
+    }
+  });
+
+  it("should accept boolean values for firstGeneration, legacyStatus, financialAidApplied", () => {
+    const result = validateSubmission({
+      ...validInput,
+      firstGeneration: true,
+      legacyStatus: false,
+      financialAidApplied: true,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.firstGeneration).toBe(true);
+      expect(result.data.legacyStatus).toBe(false);
+      expect(result.data.financialAidApplied).toBe(true);
+    }
+  });
+
+  it("should default boolean fields to null when not provided", () => {
+    const result = validateSubmission(validInput);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.firstGeneration).toBeNull();
+      expect(result.data.legacyStatus).toBeNull();
+      expect(result.data.financialAidApplied).toBeNull();
+    }
+  });
+
+  it("should accept valid geographic classifications", () => {
+    for (const geo of ["rural", "suburban", "urban"]) {
+      const result = validateSubmission({ ...validInput, geographicClassification: geo });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.geographicClassification).toBe(geo);
+      }
+    }
+  });
+
+  it("should reject invalid geographic classification", () => {
+    const result = validateSubmission({ ...validInput, geographicClassification: "metro" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.field === "geographicClassification")).toBe(true);
+    }
+  });
+
+  it("should accept valid AP courses count", () => {
+    const result = validateSubmission({ ...validInput, apCoursesCount: "12" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.apCoursesCount).toBe(12);
+    }
+  });
+
+  it("should reject AP courses count above 30", () => {
+    const result = validateSubmission({ ...validInput, apCoursesCount: "31" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.field === "apCoursesCount")).toBe(true);
+    }
+  });
+
+  it("should accept valid scholarship types", () => {
+    for (const scholarship of ["none", "merit", "need_based", "both"]) {
+      const result = validateSubmission({ ...validInput, scholarshipOffered: scholarship });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.scholarshipOffered).toBe(scholarship);
+      }
+    }
+  });
+
+  it("should accept valid attendance intents", () => {
+    for (const intent of ["yes", "no", "undecided"]) {
+      const result = validateSubmission({ ...validInput, willAttend: intent });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.willAttend).toBe(intent);
+      }
+    }
+  });
+
+  it("should accept valid waitlist outcomes", () => {
+    for (const outcome of ["accepted_off_waitlist", "rejected_off_waitlist", "withdrew"]) {
+      const result = validateSubmission({ ...validInput, waitlistOutcome: outcome });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.waitlistOutcome).toBe(outcome);
+      }
+    }
+  });
+
+  it("should reject invalid waitlist outcome", () => {
+    const result = validateSubmission({ ...validInput, waitlistOutcome: "pending" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.field === "waitlistOutcome")).toBe(true);
+    }
+  });
+
+  it("should leave new optional fields as null when not provided", () => {
+    const result = validateSubmission(validInput);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.highSchoolType).toBeNull();
+      expect(result.data.geographicClassification).toBeNull();
+      expect(result.data.apCoursesCount).toBeNull();
+      expect(result.data.scholarshipOffered).toBeNull();
+      expect(result.data.willAttend).toBeNull();
+      expect(result.data.waitlistOutcome).toBeNull();
+    }
+  });
 });

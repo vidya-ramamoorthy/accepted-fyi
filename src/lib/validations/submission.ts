@@ -1,4 +1,11 @@
-import type { AdmissionDecision } from "@/types/database";
+import type {
+  AdmissionDecision,
+  HighSchoolType,
+  GeographicClassification,
+  ScholarshipType,
+  AttendanceIntent,
+  WaitlistOutcome,
+} from "@/types/database";
 
 const VALID_DECISIONS: AdmissionDecision[] = [
   "accepted",
@@ -13,6 +20,40 @@ const VALID_APPLICATION_ROUNDS = [
   "regular",
   "rolling",
 ] as const;
+
+const VALID_HIGH_SCHOOL_TYPES: HighSchoolType[] = [
+  "public",
+  "private",
+  "charter",
+  "magnet",
+  "homeschool",
+  "international",
+];
+
+const VALID_GEOGRAPHIC_CLASSIFICATIONS: GeographicClassification[] = [
+  "rural",
+  "suburban",
+  "urban",
+];
+
+const VALID_SCHOLARSHIP_TYPES: ScholarshipType[] = [
+  "none",
+  "merit",
+  "need_based",
+  "both",
+];
+
+const VALID_ATTENDANCE_INTENTS: AttendanceIntent[] = [
+  "yes",
+  "no",
+  "undecided",
+];
+
+const VALID_WAITLIST_OUTCOMES: WaitlistOutcome[] = [
+  "accepted_off_waitlist",
+  "rejected_off_waitlist",
+  "withdrew",
+];
 
 const ADMISSION_CYCLE_PATTERN = /^\d{4}-\d{4}$/;
 const STATE_PATTERN = /^[A-Z]{2}$/;
@@ -31,6 +72,15 @@ export interface SubmissionInput {
   intendedMajor?: string;
   stateOfResidence: string;
   extracurriculars?: string[];
+  highSchoolType?: string;
+  firstGeneration?: boolean;
+  legacyStatus?: boolean;
+  financialAidApplied?: boolean;
+  geographicClassification?: string;
+  apCoursesCount?: string;
+  scholarshipOffered?: string;
+  willAttend?: string;
+  waitlistOutcome?: string;
 }
 
 export interface ValidationError {
@@ -52,6 +102,15 @@ export interface ValidatedSubmission {
   intendedMajor: string | null;
   stateOfResidence: string;
   extracurriculars: string[];
+  highSchoolType: HighSchoolType | null;
+  firstGeneration: boolean | null;
+  legacyStatus: boolean | null;
+  financialAidApplied: boolean | null;
+  geographicClassification: GeographicClassification | null;
+  apCoursesCount: number | null;
+  scholarshipOffered: ScholarshipType | null;
+  willAttend: AttendanceIntent | null;
+  waitlistOutcome: WaitlistOutcome | null;
 }
 
 export function validateSubmission(
@@ -122,6 +181,64 @@ export function validateSubmission(
 
   const intendedMajor = input.intendedMajor?.trim() || null;
 
+  // Validate new optional fields
+  let highSchoolType: HighSchoolType | null = null;
+  if (input.highSchoolType) {
+    if (!VALID_HIGH_SCHOOL_TYPES.includes(input.highSchoolType as HighSchoolType)) {
+      errors.push({ field: "highSchoolType", message: "Invalid high school type" });
+    } else {
+      highSchoolType = input.highSchoolType as HighSchoolType;
+    }
+  }
+
+  let geographicClassification: GeographicClassification | null = null;
+  if (input.geographicClassification) {
+    if (!VALID_GEOGRAPHIC_CLASSIFICATIONS.includes(input.geographicClassification as GeographicClassification)) {
+      errors.push({ field: "geographicClassification", message: "Invalid geographic classification" });
+    } else {
+      geographicClassification = input.geographicClassification as GeographicClassification;
+    }
+  }
+
+  let apCoursesCount: number | null = null;
+  if (input.apCoursesCount) {
+    apCoursesCount = parseInt(input.apCoursesCount, 10);
+    if (isNaN(apCoursesCount) || apCoursesCount < 0 || apCoursesCount > 30) {
+      errors.push({ field: "apCoursesCount", message: "AP courses count must be between 0 and 30" });
+    }
+  }
+
+  let scholarshipOffered: ScholarshipType | null = null;
+  if (input.scholarshipOffered) {
+    if (!VALID_SCHOLARSHIP_TYPES.includes(input.scholarshipOffered as ScholarshipType)) {
+      errors.push({ field: "scholarshipOffered", message: "Invalid scholarship type" });
+    } else {
+      scholarshipOffered = input.scholarshipOffered as ScholarshipType;
+    }
+  }
+
+  let willAttend: AttendanceIntent | null = null;
+  if (input.willAttend) {
+    if (!VALID_ATTENDANCE_INTENTS.includes(input.willAttend as AttendanceIntent)) {
+      errors.push({ field: "willAttend", message: "Invalid attendance intent" });
+    } else {
+      willAttend = input.willAttend as AttendanceIntent;
+    }
+  }
+
+  let waitlistOutcome: WaitlistOutcome | null = null;
+  if (input.waitlistOutcome) {
+    if (!VALID_WAITLIST_OUTCOMES.includes(input.waitlistOutcome as WaitlistOutcome)) {
+      errors.push({ field: "waitlistOutcome", message: "Invalid waitlist outcome" });
+    } else {
+      waitlistOutcome = input.waitlistOutcome as WaitlistOutcome;
+    }
+  }
+
+  const firstGeneration = input.firstGeneration ?? null;
+  const legacyStatus = input.legacyStatus ?? null;
+  const financialAidApplied = input.financialAidApplied ?? null;
+
   if (errors.length > 0) {
     return { success: false, errors };
   }
@@ -142,6 +259,15 @@ export function validateSubmission(
       intendedMajor,
       stateOfResidence: stateOfResidence!,
       extracurriculars,
+      highSchoolType,
+      firstGeneration,
+      legacyStatus,
+      financialAidApplied,
+      geographicClassification,
+      apCoursesCount,
+      scholarshipOffered,
+      willAttend,
+      waitlistOutcome,
     },
   };
 }

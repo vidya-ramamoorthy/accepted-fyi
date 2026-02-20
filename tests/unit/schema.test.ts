@@ -47,6 +47,15 @@ describe("Database Schema", () => {
     expect(columns).toContain("verificationTier");
     expect(columns).toContain("submissionStatus");
     expect(columns).toContain("flagCount");
+    expect(columns).toContain("highSchoolType");
+    expect(columns).toContain("firstGeneration");
+    expect(columns).toContain("legacyStatus");
+    expect(columns).toContain("financialAidApplied");
+    expect(columns).toContain("geographicClassification");
+    expect(columns).toContain("apCoursesCount");
+    expect(columns).toContain("scholarshipOffered");
+    expect(columns).toContain("willAttend");
+    expect(columns).toContain("waitlistOutcome");
   });
 
   it("should define submissionFlags table with required columns", () => {

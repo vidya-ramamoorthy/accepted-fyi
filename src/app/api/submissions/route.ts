@@ -68,6 +68,15 @@ export async function POST(request: NextRequest) {
       intendedMajor: data.intendedMajor,
       stateOfResidence: data.stateOfResidence,
       extracurriculars: data.extracurriculars,
+      highSchoolType: data.highSchoolType,
+      firstGeneration: data.firstGeneration,
+      legacyStatus: data.legacyStatus,
+      financialAidApplied: data.financialAidApplied,
+      geographicClassification: data.geographicClassification,
+      apCoursesCount: data.apCoursesCount,
+      scholarshipOffered: data.scholarshipOffered,
+      willAttend: data.willAttend,
+      waitlistOutcome: data.waitlistOutcome,
     });
 
     if (!userProfile.hasSubmitted) {

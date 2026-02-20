@@ -44,6 +44,40 @@ export const schoolTypeEnum = pgEnum("school_type", [
   "community_college",
 ]);
 
+export const highSchoolTypeEnum = pgEnum("high_school_type", [
+  "public",
+  "private",
+  "charter",
+  "magnet",
+  "homeschool",
+  "international",
+]);
+
+export const geographicClassificationEnum = pgEnum("geographic_classification", [
+  "rural",
+  "suburban",
+  "urban",
+]);
+
+export const scholarshipTypeEnum = pgEnum("scholarship_type", [
+  "none",
+  "merit",
+  "need_based",
+  "both",
+]);
+
+export const attendanceIntentEnum = pgEnum("attendance_intent", [
+  "yes",
+  "no",
+  "undecided",
+]);
+
+export const waitlistOutcomeEnum = pgEnum("waitlist_outcome", [
+  "accepted_off_waitlist",
+  "rejected_off_waitlist",
+  "withdrew",
+]);
+
 export const userProfiles = pgTable("user_profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   authUserId: uuid("auth_user_id").notNull().unique(),
@@ -95,6 +129,15 @@ export const admissionSubmissions = pgTable(
     intendedMajor: varchar("intended_major", { length: 100 }),
     applicationRound: applicationRoundEnum("application_round").notNull(),
     stateOfResidence: varchar("state_of_residence", { length: 2 }).notNull(),
+    highSchoolType: highSchoolTypeEnum("high_school_type"),
+    firstGeneration: boolean("first_generation"),
+    legacyStatus: boolean("legacy_status"),
+    financialAidApplied: boolean("financial_aid_applied"),
+    geographicClassification: geographicClassificationEnum("geographic_classification"),
+    apCoursesCount: integer("ap_courses_count"),
+    scholarshipOffered: scholarshipTypeEnum("scholarship_offered"),
+    willAttend: attendanceIntentEnum("will_attend"),
+    waitlistOutcome: waitlistOutcomeEnum("waitlist_outcome"),
     verificationTier: verificationTierEnum("verification_tier")
       .notNull()
       .default("bronze"),

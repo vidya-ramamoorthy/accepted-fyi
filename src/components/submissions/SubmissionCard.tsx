@@ -18,6 +18,28 @@ const ROUND_LABELS: Record<string, string> = {
   rolling: "Rolling",
 };
 
+const HIGH_SCHOOL_LABELS: Record<string, string> = {
+  public: "Public HS",
+  private: "Private HS",
+  charter: "Charter",
+  magnet: "Magnet",
+  homeschool: "Homeschool",
+  international: "International",
+};
+
+const SCHOLARSHIP_LABELS: Record<string, string> = {
+  none: "No Scholarship",
+  merit: "Merit Scholarship",
+  need_based: "Need-Based Aid",
+  both: "Merit & Need Aid",
+};
+
+const WAITLIST_LABELS: Record<string, string> = {
+  accepted_off_waitlist: "Accepted off WL",
+  rejected_off_waitlist: "Rejected off WL",
+  withdrew: "Withdrew from WL",
+};
+
 interface SubmissionCardProps {
   schoolName: string;
   schoolState: string;
@@ -33,6 +55,15 @@ interface SubmissionCardProps {
   verificationTier: string;
   extracurriculars: string[];
   createdAt: Date | string;
+  highSchoolType: string | null;
+  firstGeneration: boolean | null;
+  legacyStatus: boolean | null;
+  financialAidApplied: boolean | null;
+  geographicClassification: string | null;
+  apCoursesCount: number | null;
+  scholarshipOffered: string | null;
+  willAttend: string | null;
+  waitlistOutcome: string | null;
 }
 
 export default function SubmissionCard({
@@ -49,9 +80,30 @@ export default function SubmissionCard({
   stateOfResidence,
   verificationTier,
   extracurriculars,
+  highSchoolType,
+  firstGeneration,
+  legacyStatus,
+  geographicClassification,
+  apCoursesCount,
+  scholarshipOffered,
+  willAttend,
+  waitlistOutcome,
 }: SubmissionCardProps) {
   const decisionStyle = DECISION_STYLES[decision] ?? DECISION_STYLES.accepted;
   const verification = VERIFICATION_LABELS[verificationTier] ?? VERIFICATION_LABELS.bronze;
+
+  const contextTags: string[] = [];
+  if (highSchoolType && HIGH_SCHOOL_LABELS[highSchoolType]) {
+    contextTags.push(HIGH_SCHOOL_LABELS[highSchoolType]);
+  }
+  if (geographicClassification) {
+    contextTags.push(geographicClassification.charAt(0).toUpperCase() + geographicClassification.slice(1));
+  }
+  if (firstGeneration) contextTags.push("First-Gen");
+  if (legacyStatus) contextTags.push("Legacy");
+  if (apCoursesCount !== null && apCoursesCount > 0) {
+    contextTags.push(`${apCoursesCount} APs`);
+  }
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5 transition-shadow hover:shadow-md">
@@ -62,11 +114,18 @@ export default function SubmissionCard({
             {schoolState} &middot; {admissionCycle} &middot; {ROUND_LABELS[applicationRound] ?? applicationRound}
           </p>
         </div>
-        <span
-          className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${decisionStyle.background} ${decisionStyle.text}`}
-        >
-          {decisionStyle.label}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${decisionStyle.background} ${decisionStyle.text}`}
+          >
+            {decisionStyle.label}
+          </span>
+          {waitlistOutcome && WAITLIST_LABELS[waitlistOutcome] && (
+            <span className="inline-flex rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+              {WAITLIST_LABELS[waitlistOutcome]}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -87,6 +146,31 @@ export default function SubmissionCard({
       {intendedMajor && (
         <p className="mt-3 text-sm text-gray-600">
           <span className="font-medium">Major:</span> {intendedMajor}
+        </p>
+      )}
+
+      {contextTags.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {contextTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {scholarshipOffered && scholarshipOffered !== "none" && SCHOLARSHIP_LABELS[scholarshipOffered] && (
+        <p className="mt-2 text-xs font-medium text-emerald-600">
+          {SCHOLARSHIP_LABELS[scholarshipOffered]}
+        </p>
+      )}
+
+      {willAttend && (
+        <p className="mt-1 text-xs text-gray-500">
+          Attending: {willAttend === "yes" ? "Yes" : willAttend === "no" ? "No" : "Undecided"}
         </p>
       )}
 
