@@ -9,7 +9,13 @@ export function getDb() {
   if (cachedDb) return cachedDb;
 
   const { database } = getServerConfig();
-  const client = postgres(database.url, { prepare: false });
+  const isBuild = process.env.NEXT_PHASE === "phase-production-build";
+  const client = postgres(database.url, {
+    prepare: false,
+    max: isBuild ? 2 : 10,
+    idle_timeout: isBuild ? 5 : 20,
+    connect_timeout: 10,
+  });
   cachedDb = drizzle(client, { schema });
   return cachedDb;
 }

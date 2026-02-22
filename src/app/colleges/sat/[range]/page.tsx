@@ -5,6 +5,8 @@ import { SAT_RANGES, SAT_RANGE_BY_SLUG } from "@/lib/constants/score-ranges";
 import { getSchoolsBySatRange } from "@/lib/db/queries/schools";
 import FilterableSchoolGrid from "@/components/schools/FilterableSchoolGrid";
 
+export const revalidate = 3600;
+
 interface SatRangePageProps {
   params: Promise<{ range: string }>;
 }

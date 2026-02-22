@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { validateSubmission } from "@/lib/validations/submission";
 import { extractUserProfileData } from "@/lib/utils/auth-helpers";
 import { findOrCreateUser, markUserAsSubmitted } from "@/lib/db/queries/users";
@@ -122,6 +123,8 @@ export const POST = createApiHandler(
         await markUserAsSubmitted(ctx.user!.id);
       }
 
+      revalidateTag(`school-submissions-${school.id}`, { expire: 0 });
+
       return NextResponse.json({ submission }, { status: 201 });
     } catch (error) {
       const isDuplicateSubmission =
@@ -171,7 +174,9 @@ export const GET = createApiHandler(
 
     try {
       const results = await getSubmissionsWithSchool(filters);
-      return NextResponse.json(results);
+      return NextResponse.json(results, {
+        headers: { "Cache-Control": "private, s-maxage=60" },
+      });
     } catch (error) {
       logger.error("submissions.fetch_failed", { error });
       return NextResponse.json(

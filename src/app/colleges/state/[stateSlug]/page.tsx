@@ -5,6 +5,8 @@ import { US_STATES, STATE_BY_SLUG } from "@/lib/constants/us-states";
 import { getSchoolsByState, getStateAggregateStats } from "@/lib/db/queries/schools";
 import FilterableSchoolGrid from "@/components/schools/FilterableSchoolGrid";
 
+export const revalidate = 3600;
+
 interface StatePageProps {
   params: Promise<{ stateSlug: string }>;
 }

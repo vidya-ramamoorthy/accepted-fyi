@@ -2,18 +2,19 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getSchoolById, getSchoolBySlug } from "@/lib/db/queries/schools";
-import { getSubmissionsForSchool } from "@/lib/db/queries/submissions";
+import { getSubmissionsForSchool, getSubmissionStatsForSchool } from "@/lib/db/queries/submissions";
 import { getTimelinesForSchoolAndCycle } from "@/lib/db/queries/decision-timelines";
 import { DECISION_DATES_2025_2026 } from "@/lib/constants/decision-dates";
 import DecisionTimeline from "@/components/DecisionTimeline";
 import SubmissionCard from "@/components/submissions/SubmissionCard";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 1800;
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface SchoolDetailPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 async function resolveSchool(slugOrId: string) {
@@ -57,15 +58,20 @@ export async function generateMetadata({ params }: SchoolDetailPageProps): Promi
   };
 }
 
-export default async function SchoolDetailPage({ params }: SchoolDetailPageProps) {
+export default async function SchoolDetailPage({ params, searchParams }: SchoolDetailPageProps) {
   const { slug } = await params;
+  const { page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const school = await resolveSchool(slug);
 
   if (!school) {
     notFound();
   }
 
-  const submissions = await getSubmissionsForSchool(school.id);
+  const [submissions, submissionStats] = await Promise.all([
+    getSubmissionsForSchool(school.id, currentPage),
+    getSubmissionStatsForSchool(school.id),
+  ]);
 
   // Fetch decision timeline: try DB first, fall back to static constants
   const currentCycle = "2025-2026";
@@ -106,36 +112,25 @@ export default async function SchoolDetailPage({ params }: SchoolDetailPageProps
     }));
   }
 
-  const acceptedCount = submissions.filter((s) => s.decision === "accepted").length;
-  const rejectedCount = submissions.filter((s) => s.decision === "rejected").length;
-  const waitlistedCount = submissions.filter((s) => s.decision === "waitlisted").length;
-  const deferredCount = submissions.filter((s) => s.decision === "deferred").length;
+  const {
+    totalCount: totalSubmissions,
+    acceptedCount,
+    rejectedCount,
+    waitlistedCount,
+    deferredCount,
+    avgGpaUnweighted: averageGpa,
+    avgSatScore: averageSat,
+    avgActScore: averageAct,
+    minSatScore,
+    maxSatScore,
+    minGpaUnweighted: minGpa,
+    maxGpaUnweighted: maxGpa,
+  } = submissionStats;
 
-  const gpaValues = submissions
-    .map((s) => s.gpaUnweighted)
-    .filter((g): g is string => g !== null)
-    .map(Number);
-  const averageGpa = gpaValues.length > 0
-    ? (gpaValues.reduce((sum, g) => sum + g, 0) / gpaValues.length).toFixed(2)
+  const crowdsourcedAcceptanceRate = totalSubmissions > 0
+    ? Math.round((acceptedCount / totalSubmissions) * 100)
     : null;
-
-  const satValues = submissions
-    .map((s) => s.satScore)
-    .filter((s): s is number => s !== null);
-  const averageSat = satValues.length > 0
-    ? Math.round(satValues.reduce((sum, s) => sum + s, 0) / satValues.length)
-    : null;
-
-  const actValues = submissions
-    .map((s) => s.actScore)
-    .filter((a): a is number => a !== null);
-  const averageAct = actValues.length > 0
-    ? Math.round(actValues.reduce((sum, a) => sum + a, 0) / actValues.length)
-    : null;
-
-  const crowdsourcedAcceptanceRate = submissions.length > 0
-    ? Math.round((acceptedCount / submissions.length) * 100)
-    : null;
+  const totalPages = Math.ceil(totalSubmissions / 20);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -283,21 +278,21 @@ export default async function SchoolDetailPage({ params }: SchoolDetailPageProps
         {/* Community Data — Aggregate Stats */}
         <div className="mt-6">
           <h2 className="font-semibold text-white">Community Data</h2>
-          <p className="mt-1 text-xs text-slate-500">From {submissions.length} crowdsourced submission{submissions.length !== 1 ? "s" : ""}</p>
+          <p className="mt-1 text-xs text-slate-500">From {totalSubmissions} crowdsourced submission{totalSubmissions !== 1 ? "s" : ""}</p>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Total Submissions" value={submissions.length.toString()} />
+          <StatCard label="Total Submissions" value={totalSubmissions.toString()} />
           <StatCard
             label="Crowdsourced Accept Rate"
             value={crowdsourcedAcceptanceRate !== null ? `${crowdsourcedAcceptanceRate}%` : "\u2014"}
             valueColor="text-emerald-400"
           />
-          <StatCard label="Avg GPA (UW)" value={averageGpa ?? "\u2014"} />
+          <StatCard label="Avg GPA (UW)" value={averageGpa?.toString() ?? "\u2014"} />
           <StatCard label="Avg SAT" value={averageSat?.toString() ?? "\u2014"} />
         </div>
 
         {/* Decision Breakdown */}
-        {submissions.length > 0 && (
+        {totalSubmissions > 0 && (
           <div className="mt-6 rounded-2xl border border-white/5 bg-slate-900/50 p-6">
             <h2 className="font-semibold text-white">Decision Breakdown</h2>
             <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -310,16 +305,16 @@ export default async function SchoolDetailPage({ params }: SchoolDetailPageProps
             <div className="mt-4">
               <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-800">
                 {acceptedCount > 0 && (
-                  <div className="bg-emerald-500 transition-all" style={{ width: `${(acceptedCount / submissions.length) * 100}%` }} />
+                  <div className="bg-emerald-500 transition-all" style={{ width: `${(acceptedCount / totalSubmissions) * 100}%` }} />
                 )}
                 {deferredCount > 0 && (
-                  <div className="bg-blue-500 transition-all" style={{ width: `${(deferredCount / submissions.length) * 100}%` }} />
+                  <div className="bg-blue-500 transition-all" style={{ width: `${(deferredCount / totalSubmissions) * 100}%` }} />
                 )}
                 {waitlistedCount > 0 && (
-                  <div className="bg-amber-500 transition-all" style={{ width: `${(waitlistedCount / submissions.length) * 100}%` }} />
+                  <div className="bg-amber-500 transition-all" style={{ width: `${(waitlistedCount / totalSubmissions) * 100}%` }} />
                 )}
                 {rejectedCount > 0 && (
-                  <div className="bg-red-500 transition-all" style={{ width: `${(rejectedCount / submissions.length) * 100}%` }} />
+                  <div className="bg-red-500 transition-all" style={{ width: `${(rejectedCount / totalSubmissions) * 100}%` }} />
                 )}
               </div>
             </div>
@@ -327,20 +322,24 @@ export default async function SchoolDetailPage({ params }: SchoolDetailPageProps
         )}
 
         {/* Additional Stats */}
-        {(averageAct !== null || satValues.length > 0) && (
+        {(averageAct !== null || minSatScore !== null) && (
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {averageAct !== null && <StatCard label="Avg ACT" value={averageAct.toString()} />}
-            {satValues.length > 0 && <StatCard label="SAT Range" value={`${Math.min(...satValues)}-${Math.max(...satValues)}`} />}
-            {gpaValues.length > 0 && <StatCard label="GPA Range" value={`${Math.min(...gpaValues).toFixed(2)}-${Math.max(...gpaValues).toFixed(2)}`} />}
+            {minSatScore !== null && maxSatScore !== null && <StatCard label="SAT Range" value={`${minSatScore}-${maxSatScore}`} />}
+            {minGpa !== null && maxGpa !== null && <StatCard label="GPA Range" value={`${minGpa}-${maxGpa}`} />}
           </div>
         )}
 
         {/* Individual Submissions */}
         <div className="mt-12">
-          <h2 className="text-xl font-bold text-white">Individual Submissions ({submissions.length})</h2>
-          <p className="mt-1 text-sm text-slate-500">All self-reported outcomes for {school.name}</p>
+          <h2 className="text-xl font-bold text-white">Individual Submissions ({totalSubmissions})</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {totalSubmissions > 0
+              ? `Showing ${(currentPage - 1) * 20 + 1}-${Math.min(currentPage * 20, totalSubmissions)} of ${totalSubmissions} self-reported outcomes for ${school.name}`
+              : `All self-reported outcomes for ${school.name}`}
+          </p>
 
-          {submissions.length === 0 ? (
+          {totalSubmissions === 0 ? (
             <div className="mt-8 rounded-2xl border border-white/5 bg-slate-900/50 p-16 text-center">
               <h3 className="text-lg font-semibold text-white">No submissions yet</h3>
               <p className="mx-auto mt-3 max-w-md text-sm text-slate-400">
@@ -354,39 +353,66 @@ export default async function SchoolDetailPage({ params }: SchoolDetailPageProps
               </Link>
             </div>
           ) : (
-            <div className="mt-6 space-y-4">
-              {submissions.map((submission) => (
-                <SubmissionCard
-                  key={submission.id}
-                  schoolName={school.name}
-                  schoolState={school.state}
-                  decision={submission.decision}
-                  applicationRound={submission.applicationRound}
-                  admissionCycle={submission.admissionCycle}
-                  gpaUnweighted={submission.gpaUnweighted}
-                  gpaWeighted={submission.gpaWeighted}
-                  satScore={submission.satScore}
-                  actScore={submission.actScore}
-                  intendedMajor={submission.intendedMajor}
-                  stateOfResidence={submission.stateOfResidence}
-                  verificationTier={submission.verificationTier}
-                  dataSource={submission.dataSource}
-                  extracurriculars={submission.extracurriculars}
-                  createdAt={submission.createdAt}
-                  highSchoolType={submission.highSchoolType}
-                  firstGeneration={submission.firstGeneration}
-                  legacyStatus={submission.legacyStatus}
-                  financialAidApplied={submission.financialAidApplied}
-                  geographicClassification={submission.geographicClassification}
-                  apCoursesCount={submission.apCoursesCount}
-                  ibCoursesCount={submission.ibCoursesCount}
-                  honorsCoursesCount={submission.honorsCoursesCount}
-                  scholarshipOffered={submission.scholarshipOffered}
-                  willAttend={submission.willAttend}
-                  waitlistOutcome={submission.waitlistOutcome}
-                />
-              ))}
-            </div>
+            <>
+              <div className="mt-6 space-y-4">
+                {submissions.map((submission) => (
+                  <SubmissionCard
+                    key={submission.id}
+                    schoolName={school.name}
+                    schoolState={school.state}
+                    decision={submission.decision}
+                    applicationRound={submission.applicationRound}
+                    admissionCycle={submission.admissionCycle}
+                    gpaUnweighted={submission.gpaUnweighted}
+                    gpaWeighted={submission.gpaWeighted}
+                    satScore={submission.satScore}
+                    actScore={submission.actScore}
+                    intendedMajor={submission.intendedMajor}
+                    stateOfResidence={submission.stateOfResidence}
+                    verificationTier={submission.verificationTier}
+                    dataSource={submission.dataSource}
+                    extracurriculars={submission.extracurriculars}
+                    createdAt={submission.createdAt}
+                    highSchoolType={submission.highSchoolType}
+                    firstGeneration={submission.firstGeneration}
+                    legacyStatus={submission.legacyStatus}
+                    financialAidApplied={submission.financialAidApplied}
+                    geographicClassification={submission.geographicClassification}
+                    apCoursesCount={submission.apCoursesCount}
+                    ibCoursesCount={submission.ibCoursesCount}
+                    honorsCoursesCount={submission.honorsCoursesCount}
+                    scholarshipOffered={submission.scholarshipOffered}
+                    willAttend={submission.willAttend}
+                    waitlistOutcome={submission.waitlistOutcome}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  {currentPage > 1 && (
+                    <Link
+                      href={`/schools/${slug}?page=${currentPage - 1}`}
+                      className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-400 transition-colors hover:border-violet-500/30 hover:text-white"
+                    >
+                      Previous
+                    </Link>
+                  )}
+                  <span className="px-4 py-2 text-sm text-slate-500">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  {currentPage < totalPages && (
+                    <Link
+                      href={`/schools/${slug}?page=${currentPage + 1}`}
+                      className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-400 transition-colors hover:border-violet-500/30 hover:text-white"
+                    >
+                      Next
+                    </Link>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

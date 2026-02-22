@@ -1,4 +1,5 @@
 import { eq, and, ilike, gte, lte, sql, desc, or } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/db";
 import { admissionSubmissions, schools } from "@/lib/db/schema";
 import { escapeLikePattern } from "@/lib/utils/escape-like";
@@ -215,8 +216,47 @@ export async function getSubmissionsByUser(userId: string) {
     .orderBy(desc(admissionSubmissions.createdAt));
 }
 
-export async function getSubmissionsForSchool(schoolId: string) {
+const SCHOOL_SUBMISSIONS_PAGE_SIZE = 20;
+
+async function fetchSubmissionStatsForSchool(schoolId: string) {
   const db = getDb();
+
+  const [stats] = await db
+    .select({
+      totalCount: sql<number>`count(*)::int`,
+      acceptedCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'accepted' then 1 end)::int`,
+      rejectedCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'rejected' then 1 end)::int`,
+      waitlistedCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'waitlisted' then 1 end)::int`,
+      deferredCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'deferred' then 1 end)::int`,
+      avgGpaUnweighted: sql<number>`round(avg(${admissionSubmissions.gpaUnweighted}::numeric), 2)`,
+      avgSatScore: sql<number>`round(avg(${admissionSubmissions.satScore}))`,
+      avgActScore: sql<number>`round(avg(${admissionSubmissions.actScore}))`,
+      minSatScore: sql<number>`min(${admissionSubmissions.satScore})`,
+      maxSatScore: sql<number>`max(${admissionSubmissions.satScore})`,
+      minGpaUnweighted: sql<number>`round(min(${admissionSubmissions.gpaUnweighted}::numeric), 2)`,
+      maxGpaUnweighted: sql<number>`round(max(${admissionSubmissions.gpaUnweighted}::numeric), 2)`,
+    })
+    .from(admissionSubmissions)
+    .where(
+      and(
+        eq(admissionSubmissions.schoolId, schoolId),
+        visibleSubmissionCondition()
+      )
+    );
+
+  return stats;
+}
+
+export const getSubmissionStatsForSchool = (schoolId: string) =>
+  unstable_cache(
+    () => fetchSubmissionStatsForSchool(schoolId),
+    [`school-submission-stats-${schoolId}`],
+    { revalidate: 1800, tags: [`school-submissions-${schoolId}`] }
+  )();
+
+async function fetchSubmissionsForSchool(schoolId: string, page: number = 1) {
+  const db = getDb();
+  const offset = (page - 1) * SCHOOL_SUBMISSIONS_PAGE_SIZE;
 
   return db
     .select({
@@ -253,5 +293,14 @@ export async function getSubmissionsForSchool(schoolId: string) {
         visibleSubmissionCondition()
       )
     )
-    .orderBy(desc(admissionSubmissions.createdAt));
+    .orderBy(desc(admissionSubmissions.createdAt))
+    .limit(SCHOOL_SUBMISSIONS_PAGE_SIZE)
+    .offset(offset);
 }
+
+export const getSubmissionsForSchool = (schoolId: string, page: number = 1) =>
+  unstable_cache(
+    () => fetchSubmissionsForSchool(schoolId, page),
+    [`school-submissions-${schoolId}-page-${page}`],
+    { revalidate: 1800, tags: [`school-submissions-${schoolId}`] }
+  )();

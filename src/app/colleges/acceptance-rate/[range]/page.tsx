@@ -5,6 +5,8 @@ import { ACCEPTANCE_RATE_RANGES, ACCEPTANCE_RATE_BY_SLUG } from "@/lib/constants
 import { getSchoolsByAcceptanceRate } from "@/lib/db/queries/schools";
 import FilterableSchoolGrid from "@/components/schools/FilterableSchoolGrid";
 
+export const revalidate = 3600;
+
 interface AcceptanceRatePageProps {
   params: Promise<{ range: string }>;
 }

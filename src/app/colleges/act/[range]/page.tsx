@@ -5,6 +5,8 @@ import { ACT_RANGES, ACT_RANGE_BY_SLUG } from "@/lib/constants/score-ranges";
 import { getSchoolsByActRange } from "@/lib/db/queries/schools";
 import FilterableSchoolGrid from "@/components/schools/FilterableSchoolGrid";
 
+export const revalidate = 3600;
+
 interface ActRangePageProps {
   params: Promise<{ range: string }>;
 }

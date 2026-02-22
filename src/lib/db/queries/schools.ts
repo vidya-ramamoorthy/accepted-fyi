@@ -1,4 +1,5 @@
 import { eq, ilike, sql, and, gte, lte, between, desc } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/db";
 import { schools, admissionSubmissions } from "@/lib/db/schema";
 import { escapeLikePattern } from "@/lib/utils/escape-like";
@@ -171,7 +172,7 @@ const SCHOOL_CARD_SELECT = {
   undergradEnrollment: schools.undergradEnrollment,
 } as const;
 
-export async function getSchoolsByState(stateAbbreviation: string) {
+async function fetchSchoolsByState(stateAbbreviation: string) {
   const db = getDb();
   return db
     .select(SCHOOL_CARD_SELECT)
@@ -180,7 +181,14 @@ export async function getSchoolsByState(stateAbbreviation: string) {
     .orderBy(schools.name);
 }
 
-export async function getStateAggregateStats(stateAbbreviation: string) {
+export const getSchoolsByState = (stateAbbreviation: string) =>
+  unstable_cache(
+    () => fetchSchoolsByState(stateAbbreviation),
+    [`schools-state-${stateAbbreviation.toUpperCase()}`],
+    { revalidate: 3600, tags: [`schools-state-${stateAbbreviation.toUpperCase()}`] }
+  )();
+
+async function fetchStateAggregateStats(stateAbbreviation: string) {
   const db = getDb();
   const [stats] = await db
     .select({
@@ -196,7 +204,14 @@ export async function getStateAggregateStats(stateAbbreviation: string) {
   return stats;
 }
 
-export async function getSchoolsBySatRange(min: number, max: number) {
+export const getStateAggregateStats = (stateAbbreviation: string) =>
+  unstable_cache(
+    () => fetchStateAggregateStats(stateAbbreviation),
+    [`schools-state-stats-${stateAbbreviation.toUpperCase()}`],
+    { revalidate: 3600, tags: [`schools-state-${stateAbbreviation.toUpperCase()}`] }
+  )();
+
+async function fetchSchoolsBySatRange(min: number, max: number) {
   const db = getDb();
   return db
     .select(SCHOOL_CARD_SELECT)
@@ -210,7 +225,14 @@ export async function getSchoolsBySatRange(min: number, max: number) {
     .orderBy(desc(schools.satAverage), schools.name);
 }
 
-export async function getSchoolsByActRange(min: number, max: number) {
+export const getSchoolsBySatRange = (min: number, max: number) =>
+  unstable_cache(
+    () => fetchSchoolsBySatRange(min, max),
+    [`schools-sat-${min}-${max}`],
+    { revalidate: 3600, tags: ["schools-sat"] }
+  )();
+
+async function fetchSchoolsByActRange(min: number, max: number) {
   const db = getDb();
   return db
     .select(SCHOOL_CARD_SELECT)
@@ -224,7 +246,14 @@ export async function getSchoolsByActRange(min: number, max: number) {
     .orderBy(desc(schools.actMedian), schools.name);
 }
 
-export async function getSchoolsByAcceptanceRate(min: number, max: number) {
+export const getSchoolsByActRange = (min: number, max: number) =>
+  unstable_cache(
+    () => fetchSchoolsByActRange(min, max),
+    [`schools-act-${min}-${max}`],
+    { revalidate: 3600, tags: ["schools-act"] }
+  )();
+
+async function fetchSchoolsByAcceptanceRate(min: number, max: number) {
   const db = getDb();
   return db
     .select(SCHOOL_CARD_SELECT)
@@ -232,3 +261,10 @@ export async function getSchoolsByAcceptanceRate(min: number, max: number) {
     .where(between(schools.acceptanceRate, min.toString(), max.toString()))
     .orderBy(schools.acceptanceRate, schools.name);
 }
+
+export const getSchoolsByAcceptanceRate = (min: number, max: number) =>
+  unstable_cache(
+    () => fetchSchoolsByAcceptanceRate(min, max),
+    [`schools-acceptance-rate-${min}-${max}`],
+    { revalidate: 3600, tags: ["schools-acceptance-rate"] }
+  )();

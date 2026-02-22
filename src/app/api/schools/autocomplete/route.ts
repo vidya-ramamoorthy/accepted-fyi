@@ -19,7 +19,10 @@ export async function GET(request: NextRequest) {
       state: school.state,
       city: school.city,
     }));
-    return NextResponse.json({ schools });
+    return NextResponse.json(
+      { schools },
+      { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } }
+    );
   } catch (error) {
     logger.error("schools.autocomplete_failed", { error });
     return NextResponse.json({ schools: [] });
