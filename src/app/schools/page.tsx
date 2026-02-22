@@ -2,7 +2,7 @@ import { getSchoolsWithStats } from "@/lib/db/queries/schools";
 import Link from "next/link";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Browse Schools | accepted.fyi",

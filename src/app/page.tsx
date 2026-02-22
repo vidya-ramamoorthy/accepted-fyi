@@ -1,17 +1,32 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/db";
 import { schools, admissionSubmissions } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
+
+export const revalidate = 3600;
+
+const getSiteCounts = unstable_cache(
+  async () => {
+    const db = getDb();
+    const [schoolResult] = await db.select({ count: sql<number>`count(*)::int` }).from(schools);
+    const [submissionResult] = await db.select({ count: sql<number>`count(*)::int` }).from(admissionSubmissions);
+    return {
+      schoolCount: schoolResult?.count ?? 0,
+      submissionCount: submissionResult?.count ?? 0,
+    };
+  },
+  ["site-counts"],
+  { revalidate: 3600, tags: ["site-counts"] }
+);
 
 export default async function HomePage() {
   let schoolCount = 0;
   let submissionCount = 0;
   try {
-    const db = getDb();
-    const [schoolResult] = await db.select({ count: sql<number>`count(*)::int` }).from(schools);
-    const [submissionResult] = await db.select({ count: sql<number>`count(*)::int` }).from(admissionSubmissions);
-    schoolCount = schoolResult?.count ?? 0;
-    submissionCount = submissionResult?.count ?? 0;
+    const counts = await getSiteCounts();
+    schoolCount = counts.schoolCount;
+    submissionCount = counts.submissionCount;
   } catch {
     // DB unavailable — show defaults
   }

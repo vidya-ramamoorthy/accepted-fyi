@@ -63,7 +63,7 @@ interface SchoolsWithStatsOptions {
   pageSize?: number;
 }
 
-export async function getSchoolsWithStats(options: SchoolsWithStatsOptions = {}) {
+async function fetchSchoolsWithStats(options: SchoolsWithStatsOptions = {}) {
   const db = getDb();
   const pageSize = Math.min(options.pageSize ?? 30, 100);
   const currentPage = Math.max(options.page ?? 1, 1);
@@ -118,6 +118,15 @@ export async function getSchoolsWithStats(options: SchoolsWithStatsOptions = {})
     pageSize,
     totalPages: Math.ceil((countResult?.total ?? 0) / pageSize),
   };
+}
+
+export function getSchoolsWithStats(options: SchoolsWithStatsOptions = {}) {
+  const cacheKey = `schools-list-q:${options.query ?? ""}-s:${options.state ?? ""}-p:${options.page ?? 1}`;
+  return unstable_cache(
+    () => fetchSchoolsWithStats(options),
+    [cacheKey],
+    { revalidate: 300, tags: ["schools-list"] }
+  )();
 }
 
 export async function getSchoolById(schoolId: string) {

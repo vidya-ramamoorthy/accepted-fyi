@@ -12,7 +12,7 @@
 
 | Layer | Technology | Cost (Free Tier) |
 |-------|-----------|-----------------|
-| Framework | Next.js 15 (App Router, TypeScript) | $0 (open source) |
+| Framework | Next.js 16 (App Router, TypeScript) | $0 (open source) |
 | Hosting | Vercel Hobby tier | $0/month |
 | Database | Supabase Postgres | $0/month (500 MB storage) |
 | Auth | Supabase Auth (Google + Apple sign-in) | $0/month (50,000 MAUs free) |
@@ -194,3 +194,37 @@
 - Prefer Drizzle ORM for type-safe database queries
 - Use Server Components by default, Client Components only when needed
 - Implement proper error boundaries and loading states
+
+## Cost Optimization Rules (DO NOT REGRESS)
+
+These rules exist to keep infrastructure costs low. Violating them can 10x hosting bills. See `docs/decisions/002-cost-analysis-by-user-tier.md` and `docs/decisions/003-cost-reduction-plan.md` for full context.
+
+### Caching Rules
+- **NEVER add `export const dynamic = "force-dynamic"` to public pages.** The only page allowed to use `force-dynamic` is the auth-gated dashboard layout (`(dashboard)/layout.tsx`). Every public page must use ISR (`export const revalidate = N`) or be fully static.
+- **All new public DB read queries MUST be wrapped with `unstable_cache()`.** Include a descriptive cache key and a `tags` array for targeted revalidation. See `src/lib/db/queries/schools.ts` for examples.
+- **When adding a new page that reads from the DB**, always add `export const revalidate = <seconds>`. Use 3600 (1h) for institutional/school data, 1800 (30min) for crowdsourced submission data, 300 (5min) for frequently-changing list views.
+- **When creating a POST/mutation endpoint that changes data**, call `revalidateTag()` for the affected cache tags so stale data is purged. See `src/app/api/submissions/route.ts` for the pattern.
+
+### API Route Rules
+- **All public GET API routes must include `Cache-Control` headers.** Use `s-maxage` for CDN caching. See existing routes for patterns:
+  - Public data: `Cache-Control: public, s-maxage=300, stale-while-revalidate=600`
+  - Autocomplete: `Cache-Control: public, s-maxage=60, stale-while-revalidate=120`
+  - Auth-gated reads: `Cache-Control: private, s-maxage=60`
+
+### Database Rules
+- **Never load unbounded result sets.** All list queries must use `LIMIT`/`OFFSET` pagination. Default page size: 20-30, max: 100.
+- **Never `SELECT *` from tables.** Always select only the columns needed. Use `SCHOOL_CARD_SELECT` pattern for card views vs full detail.
+- **Aggregate stats must be computed in SQL**, not by fetching all rows and computing in JS. See `getSubmissionStatsForSchool()` for the pattern.
+- **Connection pool limits must stay conservative.** Build: `max: 2`, runtime: `max: 10`. Do not increase without verifying Supabase connection limits.
+
+### Build Rules
+- **Build workers are capped at 4 CPUs** in `next.config.ts` to prevent DB connection exhaustion. Do not remove or increase `experimental.cpus` without verifying DB capacity.
+
+### Before Merging Checklist
+When reviewing PRs that touch pages or DB queries, verify:
+1. No new `force-dynamic` on public pages
+2. New DB queries are wrapped with `unstable_cache()`
+3. New pages have `export const revalidate`
+4. Mutations call `revalidateTag()` for affected caches
+5. API GET routes include `Cache-Control` headers
+6. List queries are paginated with `LIMIT`/`OFFSET`
