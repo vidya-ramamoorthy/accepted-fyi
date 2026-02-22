@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { US_STATES, STATE_BY_SLUG } from "@/lib/constants/us-states";
 import { getSchoolsByState, getStateAggregateStats } from "@/lib/db/queries/schools";
-import SchoolCard from "@/components/schools/SchoolCard";
+import FilterableSchoolGrid from "@/components/schools/FilterableSchoolGrid";
 
 interface StatePageProps {
   params: Promise<{ stateSlug: string }>;
@@ -127,12 +127,8 @@ export default async function StatePage({ params }: StatePageProps) {
           </div>
         </div>
 
-        {/* School Grid */}
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {stateSchools.map((school) => (
-            <SchoolCard key={school.id} {...school} />
-          ))}
-        </div>
+        {/* School Grid with Cross-Filters */}
+        <FilterableSchoolGrid schools={stateSchools} hideFilter="state" />
 
         {/* Cross-links to other states */}
         <section className="mt-16 border-t border-white/5 pt-8">

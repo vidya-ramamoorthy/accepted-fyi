@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SAT_RANGES, SAT_RANGE_BY_SLUG } from "@/lib/constants/score-ranges";
 import { getSchoolsBySatRange } from "@/lib/db/queries/schools";
-import SchoolCard from "@/components/schools/SchoolCard";
+import FilterableSchoolGrid from "@/components/schools/FilterableSchoolGrid";
 
 interface SatRangePageProps {
   params: Promise<{ range: string }>;
@@ -72,20 +72,7 @@ export default async function SatRangePage({ params }: SatRangePageProps) {
           {matchingSchools.length} schools where a {range.label} SAT score is competitive
         </p>
 
-        {matchingSchools.length === 0 ? (
-          <div className="mt-12 rounded-2xl border border-white/5 bg-slate-900/50 p-16 text-center">
-            <h2 className="text-lg font-semibold text-white">No schools found</h2>
-            <p className="mx-auto mt-3 max-w-md text-sm text-slate-400">
-              We don&apos;t have SAT score data for schools in this range yet.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {matchingSchools.map((school) => (
-              <SchoolCard key={school.id} {...school} />
-            ))}
-          </div>
-        )}
+        <FilterableSchoolGrid schools={matchingSchools} hideFilter="sat" />
 
         {/* Cross-links */}
         <section className="mt-16 border-t border-white/5 pt-8">
