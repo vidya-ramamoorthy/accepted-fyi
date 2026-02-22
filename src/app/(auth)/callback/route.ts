@@ -3,6 +3,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { findOrCreateUser } from "@/lib/db/queries/users";
 import { extractUserProfileData, sanitizeRedirectPath } from "@/lib/utils/auth-helpers";
+import { getServerConfig } from "@/lib/config";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -11,10 +13,11 @@ export async function GET(request: Request) {
   const safeRedirectPath = sanitizeRedirectPath(rawRedirect);
 
   if (code) {
+    const { supabase: supabaseConfig } = getServerConfig();
     const cookieStore = await cookies();
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseConfig.url,
+      supabaseConfig.anonKey,
       {
         cookies: {
           getAll() {
@@ -40,7 +43,7 @@ export async function GET(request: Request) {
         try {
           await findOrCreateUser(extractUserProfileData(user));
         } catch (profileError) {
-          console.error("Profile creation failed during auth callback:", profileError);
+          logger.error("auth.profile_creation_failed", { error: profileError });
           return NextResponse.redirect(
             `${origin}/login?error=profile_setup_failed`
           );

@@ -1,16 +1,16 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type { NextRequest } from "next/server";
+import { getServerConfig } from "@/lib/config";
 
 function createRedisClient(): Redis | null {
-  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const { redis } = getServerConfig();
 
-  if (!redisUrl || !redisToken) {
+  if (!redis) {
     return null;
   }
 
-  return new Redis({ url: redisUrl, token: redisToken });
+  return new Redis({ url: redis.url, token: redis.token });
 }
 
 const redis = createRedisClient();

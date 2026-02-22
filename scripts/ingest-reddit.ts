@@ -278,27 +278,139 @@ function parseStateOfResidence(demographicsText: string): string | null {
   return null;
 }
 
+function extractSchoolFromLine(line: string): { schoolName: string; applicationRound: ParsedDecision["applicationRound"] } | null {
+  let cleanLine = line.replace(/^[\s*\-•]+/, "").trim();
+  if (!cleanLine || cleanLine.length < 2) return null;
+
+  // Remove spoiler tags: >!text!< → text
+  cleanLine = cleanLine.replace(/>!([^!]*)!</g, "$1");
+
+  // Remove inline decision indicators for school name extraction
+  // (these are handled separately when decisions are inline)
+  let schoolName = cleanLine;
+  let applicationRound: ParsedDecision["applicationRound"] = null;
+
+  // Check for round indicators
+  const roundPatterns: Array<{ pattern: RegExp; round: NonNullable<ParsedDecision["applicationRound"]> }> = [
+    { pattern: /\b(?:ED\b|Early\s*Decision)/i, round: "early_decision" },
+    { pattern: /\b(?:EA\b|Early\s*Action|REA|SCEA)/i, round: "early_action" },
+    { pattern: /\b(?:RD\b|Regular\s*Decision|Regular)\b/i, round: "regular" },
+    { pattern: /\bRolling\b/i, round: "rolling" },
+  ];
+
+  for (const { pattern: roundPattern, round } of roundPatterns) {
+    if (roundPattern.test(cleanLine)) {
+      applicationRound = round;
+      schoolName = cleanLine.replace(roundPattern, "").trim();
+      break;
+    }
+  }
+
+  // Clean up school name: remove parentheses content, extra punctuation
+  schoolName = schoolName
+    .replace(/\([^)]*\)/g, "")      // remove parenthetical notes
+    .replace(/\[[^\]]*\]/g, "")      // remove bracketed notes like [waitlisted]
+    .replace(/[*_~`#>!]/g, "")       // remove markdown formatting + spoiler chars
+    .replace(/\s*[-–—]\s*$/, "")     // remove trailing dashes
+    .replace(/^\d+\.\s*/, "")        // remove leading numbers like "1. "
+    .replace(/,\s*$/, "")            // remove trailing commas
+    .replace(/\s*:+\s*$/, "")        // remove trailing colons
+    .replace(/\s*with\s+\$[\d,.]+[kK]?\s*.*/i, "") // remove "with $152k merit" suffixes
+    .trim();
+
+  // Clean HTML entities and zero-width spaces
+  schoolName = schoolName
+    .replace(/&amp;x200b;/g, "")
+    .replace(/&x200b;/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&#\w+;/g, "")
+    .replace(/\u200b/g, "")
+    .trim();
+
+  // Skip non-school entries (too short, too long, section headers, sentences)
+  const wordCount = schoolName.split(/\s+/).length;
+  if (
+    schoolName.length < 3 ||
+    schoolName.length > 100 ||
+    wordCount > 8 ||
+    /^(list|none|n\/a|pending|waiting|final thoughts|additional|overall|comments|tldr|thank|okay|most|after|the |where|i |my |not )/i.test(schoolName) ||
+    /[.!?]$/.test(schoolName)
+  ) {
+    return null;
+  }
+
+  return { schoolName, applicationRound };
+}
+
 function parseDecisions(text: string): ParsedDecision[] {
   const decisions: ParsedDecision[] = [];
 
-  // Find decisions section
-  const decisionsSection = extractSection(text, "Decisions");
-  if (!decisionsSection) {
-    // Try alternative section names
-    const altSection = text.match(
-      /\*\*(?:Acceptances|Results|College Results)[^*]*\*\*[\s\S]*$/i
-    );
-    if (!altSection) return decisions;
+  // First try: parse spoiler-tag inline decisions (e.g. "* MIT: >!Accepted!<")
+  const spoilerInlinePattern = /^[\s*\-•]*(.+?):\s*>!(Accepted|Rejected|Waitlisted|Deferred)!</gim;
+  let spoilerMatch;
+  while ((spoilerMatch = spoilerInlinePattern.exec(text)) !== null) {
+    const rawSchoolName = spoilerMatch[1].trim();
+    const rawDecision = spoilerMatch[2].toLowerCase() as ParsedDecision["decision"];
+    const extracted = extractSchoolFromLine(rawSchoolName);
+    if (extracted) {
+      decisions.push({
+        schoolName: extracted.schoolName,
+        decision: rawDecision,
+        applicationRound: extracted.applicationRound,
+      });
+    }
   }
 
-  const sectionText = decisionsSection || text;
+  // If spoiler-tag parsing found results, return them (avoids double-counting)
+  if (decisions.length > 0) return decisions;
+
+  // Find the decisions section — try multiple approaches
+  let sectionText: string | null = null;
+
+  // Approach 1: extractSection with bold **Decisions**
+  sectionText = extractSection(text, "Decisions");
+
+  // Approach 2: Look for the official template header **Decisions (indicate...)**
+  if (!sectionText) {
+    const templateHeaderMatch = text.match(
+      /\*\*Decisions?\s*\([^)]*\)\*\*[:\s]*([\s\S]*?)(?=\*\*(?:Additional|Final|$))/i
+    );
+    if (templateHeaderMatch) sectionText = templateHeaderMatch[1];
+  }
+
+  // Approach 3: Look for italic or bold acceptance/rejection subsections directly in the full text
+  // Many posts don't have a parent "Decisions" section — they jump straight to *Acceptances:*
+  if (!sectionText) {
+    const hasSubsections =
+      /\*?\*?Acceptances?\*?\*?:?/i.test(text) ||
+      /\*?\*?Rejections?\*?\*?:?/i.test(text) ||
+      /\*?\*?Waitlist(?:ed|s)?\*?\*?:?/i.test(text);
+    if (hasSubsections) {
+      // Use the full text from the first subsection onward
+      const firstSubsectionMatch = text.match(
+        /(\*?\*?(?:Acceptances?|Rejections?|Waitlist(?:ed|s)?|Deferred?)\*?\*?:?[\s\S]*)$/i
+      );
+      if (firstSubsectionMatch) sectionText = firstSubsectionMatch[1];
+    }
+  }
+
+  // Approach 4: hash header like # Results or ## Decisions
+  if (!sectionText) {
+    const hashMatch = text.match(
+      /^#+\s*.*(?:results?|decisions?)[^\n]*\n([\s\S]*?)(?=^#+\s|$)/im
+    );
+    if (hashMatch) sectionText = hashMatch[1];
+  }
+
+  if (!sectionText) return decisions;
 
   // Parse acceptance, waitlist, rejection sub-sections
+  // These patterns handle bold (**), italic (*), or plain text headers
   const decisionTypes: Array<{ pattern: RegExp; decision: ParsedDecision["decision"] }> = [
-    { pattern: /(?:\*?\*?Acceptances?\*?\*?:?)([\s\S]*?)(?=\*?\*?(?:Waitlist|Rejection|Deferred|Additional|$))/i, decision: "accepted" },
-    { pattern: /(?:\*?\*?Waitlist(?:ed|s)?\*?\*?:?)([\s\S]*?)(?=\*?\*?(?:Acceptance|Rejection|Deferred|Additional|$))/i, decision: "waitlisted" },
-    { pattern: /(?:\*?\*?Rejection(?:s)?\*?\*?:?)([\s\S]*?)(?=\*?\*?(?:Acceptance|Waitlist|Deferred|Additional|$))/i, decision: "rejected" },
-    { pattern: /(?:\*?\*?Deferred?\*?\*?:?)([\s\S]*?)(?=\*?\*?(?:Acceptance|Waitlist|Rejection|Additional|$))/i, decision: "deferred" },
+    { pattern: /\*?\*?Acceptances?\*?\*?:?\s*\n([\s\S]*?)(?=\*?\*?(?:Waitlist|Rejection|Deferred|Additional|Final|Where|$)|\n\s*\n\s*\*?\*?[A-Z])/i, decision: "accepted" },
+    { pattern: /\*?\*?Waitlist(?:ed|s)?\*?\*?:?\s*\n([\s\S]*?)(?=\*?\*?(?:Acceptance|Rejection|Deferred|Additional|Final|Where|$)|\n\s*\n\s*\*?\*?[A-Z])/i, decision: "waitlisted" },
+    { pattern: /\*?\*?Rejections?\*?\*?:?\s*\n([\s\S]*?)(?=\*?\*?(?:Acceptance|Waitlist|Deferred|Additional|Final|Where|$)|\n\s*\n\s*\*?\*?[A-Z])/i, decision: "rejected" },
+    { pattern: /\*?\*?Deferred?\*?\*?:?\s*\n([\s\S]*?)(?=\*?\*?(?:Acceptance|Waitlist|Rejection|Additional|Final|Where|$)|\n\s*\n\s*\*?\*?[A-Z])/i, decision: "deferred" },
   ];
 
   for (const { pattern, decision } of decisionTypes) {
@@ -307,64 +419,13 @@ function parseDecisions(text: string): ParsedDecision[] {
 
     const schoolLines = match[1].trim().split("\n");
     for (const line of schoolLines) {
-      const cleanLine = line.replace(/^[\s*\-•]+/, "").trim();
-      if (!cleanLine || cleanLine.length < 2) continue;
-
-      // Extract school name and round
-      let schoolName = cleanLine;
-      let applicationRound: ParsedDecision["applicationRound"] = null;
-
-      // Check for round indicators
-      const roundPatterns: Array<{ pattern: RegExp; round: NonNullable<ParsedDecision["applicationRound"]> }> = [
-        { pattern: /\b(?:ED|Early\s*Decision)\b/i, round: "early_decision" },
-        { pattern: /\b(?:EA|Early\s*Action|REA|SCEA)\b/i, round: "early_action" },
-        { pattern: /\b(?:RD|Regular\s*Decision|Regular)\b/i, round: "regular" },
-        { pattern: /\bRolling\b/i, round: "rolling" },
-      ];
-
-      for (const { pattern: roundPattern, round } of roundPatterns) {
-        if (roundPattern.test(cleanLine)) {
-          applicationRound = round;
-          // Remove the round text from school name
-          schoolName = cleanLine.replace(roundPattern, "").trim();
-          break;
-        }
-      }
-
-      // Clean up school name: remove parentheses content, extra punctuation
-      schoolName = schoolName
-        .replace(/\([^)]*\)/g, "") // remove parenthetical notes
-        .replace(/[*_~`#]/g, "") // remove markdown formatting
-        .replace(/\s*[-–—]\s*$/, "") // remove trailing dashes
-        .replace(/^\d+\.\s*/, "") // remove leading numbers like "1. "
-        .replace(/,\s*$/, "") // remove trailing commas
-        .trim();
-
-      // Clean HTML entities and zero-width spaces
-      schoolName = schoolName
-        .replace(/&amp;x200b;/g, "")
-        .replace(/&x200b;/g, "")
-        .replace(/&amp;/g, "&")
-        .replace(/&#\w+;/g, "")
-        .replace(/\u200b/g, "")
-        .trim();
-
-      // Skip non-school entries (too short, too long, section headers, sentences)
-      const wordCount = schoolName.split(/\s+/).length;
-      if (
-        schoolName.length < 3 ||
-        schoolName.length > 100 ||
-        wordCount > 8 ||
-        /^(list|none|n\/a|pending|waiting|final thoughts|additional|overall|comments|tldr|thank|okay|most|after|the )/i.test(schoolName) ||
-        /[.!?]$/.test(schoolName) // ends with sentence punctuation
-      ) {
-        continue;
-      }
+      const extracted = extractSchoolFromLine(line);
+      if (!extracted) continue;
 
       decisions.push({
-        schoolName,
+        schoolName: extracted.schoolName,
         decision,
-        applicationRound,
+        applicationRound: extracted.applicationRound,
       });
     }
   }
@@ -424,9 +485,20 @@ function parsePost(post: RedditPost): ParsedPost | null {
   if (!text || text.length < 100) return null;
 
   // Must have at least a Decisions section to be useful
-  const hasDecisions = /\*\*Decisions?\*\*/i.test(text) ||
-    /\*\*Acceptances?\*\*/i.test(text) ||
-    /\*\*Results?\*\*/i.test(text);
+  // Matches: **Decisions**, **Decisions (indicate ED/EA/...)**, *Acceptances:*, # Results, etc.
+  const hasDecisions =
+    /\*\*Decisions?[\s(][^*]*\*\*/i.test(text) ||   // **Decisions (indicate...)** (official template)
+    /\*\*Decisions?\*\*/i.test(text) ||               // **Decisions**
+    /\*\*Decisions?:\*\*/i.test(text) ||              // **Decisions:**
+    /\*Acceptances?:?\*/i.test(text) ||               // *Acceptances:* or *Acceptances* (italic)
+    /\*Rejections?:?\*/i.test(text) ||                // *Rejections:* (italic)
+    /\*Waitlist(?:ed|s)?:?\*/i.test(text) ||          // *Waitlists:* or *Waitlisted:* (italic)
+    /\*\*Acceptances?\*\*/i.test(text) ||             // **Acceptances**
+    /\*\*Results?\*\*/i.test(text) ||                 // **Results**
+    /\*\*Accepted:?\*\*/i.test(text) ||               // **Accepted:**
+    /\*\*Rejected:?\*\*/i.test(text) ||               // **Rejected:**
+    /^#+\s*.*(?:results?|decisions?)/im.test(text) || // # Results, ## Decisions
+    /\*\*(?:EA|ED|RD)\s*Schools?:?\*\*/i.test(text);  // **EA Schools:**
   if (!hasDecisions) return null;
 
   const demographicsText = extractSection(text, "Demographics") || "";
@@ -560,7 +632,7 @@ async function findSchoolId(
     "gatech": "Georgia Institute of Technology",
     "georgia tech": "Georgia Institute of Technology",
     "gt": "Georgia Institute of Technology",
-    "uva": "University of Virginia",
+    "uva": "University of Virginia-Main Campus",
     "umich": "University of Michigan-Ann Arbor",
     "umich lsa": "University of Michigan-Ann Arbor",
     "unc": "University of North Carolina at Chapel Hill",
@@ -638,6 +710,116 @@ async function findSchoolId(
     "pitt": "University of Pittsburgh-Pittsburgh Campus",
     "asu": "Arizona State University-Tempe",
     "csu long beach": "California State University-Long Beach",
+    // Additional mappings from unmatched Reddit data
+    "university of virginia": "University of Virginia-Main Campus",
+    "university of washington": "University of Washington-Seattle Campus",
+    "uw seattle": "University of Washington-Seattle Campus",
+    "unc chapel hill": "University of North Carolina at Chapel Hill",
+    "nyu stern": "New York University",
+    "nyu tandon": "New York University",
+    "nyu cas": "New York University",
+    "cal poly pomona": "California State Polytechnic University-Pomona",
+    "cpp": "California State Polytechnic University-Pomona",
+    "csu fullerton": "California State University-Fullerton",
+    "csuf": "California State University-Fullerton",
+    "sjsu": "San Jose State University",
+    "san jose state": "San Jose State University",
+    "american": "American University",
+    "american university": "American University",
+    "st olaf": "St Olaf College",
+    "st. olaf": "St Olaf College",
+    "saint olaf": "St Olaf College",
+    "grinnell": "Grinnell College",
+    "roanoke": "Roanoke College",
+    "roanoke college": "Roanoke College",
+    "randolph college": "Randolph College",
+    "randolph-macon": "Randolph-Macon College",
+    "knox": "Knox College",
+    "knox college": "Knox College",
+    "wooster": "The College of Wooster",
+    "college of wooster": "The College of Wooster",
+    "vassar": "Vassar College",
+    "lafayette": "Lafayette College",
+    "lafayette college": "Lafayette College",
+    "st. john's": "St. John's College",
+    "stanford": "Stanford University",
+    "harvard": "Harvard University",
+    "yale": "Yale University",
+    "princeton": "Princeton University",
+    "michigan": "University of Michigan-Ann Arbor",
+    "wisconsin": "University of Wisconsin-Madison",
+    "minnesota": "University of Minnesota-Twin Cities",
+    "florida": "University of Florida",
+    "georgia": "University of Georgia",
+    "uga": "University of Georgia",
+    "ut": "The University of Texas at Austin",
+    "texas a&m": "Texas A & M University-College Station",
+    "tamu": "Texas A & M University-College Station",
+    "ucm": "University of California-Merced",
+    "uc merced": "University of California-Merced",
+    "sdsu": "San Diego State University",
+    "sfsu": "San Francisco State University",
+    "csulb": "California State University-Long Beach",
+    "rit": "Rochester Institute of Technology",
+    "stevens": "Stevens Institute of Technology",
+    "drexel": "Drexel University",
+    "fordham": "Fordham University",
+    "tulane": "Tulane University of Louisiana",
+    "wake forest": "Wake Forest University",
+    "william & mary": "William & Mary",
+    "w&m": "William & Mary",
+    "wm": "William & Mary",
+    "colgate": "Colgate University",
+    "hamilton": "Hamilton College",
+    "wesleyan": "Wesleyan University",
+    "oberlin": "Oberlin College",
+    "macalester": "Macalester College",
+    "carleton": "Carleton College",
+    "reed": "Reed College",
+    "colorado college": "Colorado College",
+    "kenyon": "Kenyon College",
+    "bates": "Bates College",
+    "claremont mckenna": "Claremont McKenna College",
+    "cmc": "Claremont McKenna College",
+    "scripps": "Scripps College",
+    "pitzer": "Pitzer College",
+    "smith": "Smith College",
+    "bryn mawr": "Bryn Mawr College",
+    "mount holyoke": "Mount Holyoke College",
+    "colorado school of mines": "Colorado School of Mines",
+    "mines": "Colorado School of Mines",
+    "cooper union": "The Cooper Union for the Advancement of Science and Art",
+    "babson": "Babson College",
+    "bentley": "Bentley University",
+    "stony brook": "Stony Brook University",
+    "binghamton": "Binghamton University",
+    "bing": "Binghamton University",
+    "buffalo": "University at Buffalo",
+    "uconn": "University of Connecticut",
+    "iowa": "University of Iowa",
+    "iowa state": "Iowa State University",
+    "michigan state": "Michigan State University",
+    "msu": "Michigan State University",
+    "indiana": "Indiana University-Bloomington",
+    "iu": "Indiana University-Bloomington",
+    "indiana university bloomington": "Indiana University-Bloomington",
+    "university of maryland": "University of Maryland-College Park",
+    "calpoly": "California Polytechnic State University-San Luis Obispo",
+    "calpoly pomona": "California State Polytechnic University-Pomona",
+    "calpoly slo": "California Polytechnic State University-San Luis Obispo",
+    "washington and lee": "Washington and Lee University",
+    "washington and lee university": "Washington and Lee University",
+    "rowan": "Rowan University",
+    "rowan university": "Rowan University",
+    "university of california, riverside": "University of California-Riverside",
+    "university of california, irvine": "University of California-Irvine",
+    "university of california, davis": "University of California-Davis",
+    "university of california, santa barbara": "University of California-Santa Barbara",
+    "university of california, san diego": "University of California-San Diego",
+    "university of california, santa cruz": "University of California-Santa Cruz",
+    "university of california, merced": "University of California-Merced",
+    "university of california, los angeles": "University of California-Los Angeles",
+    "university of california, berkeley": "University of California-Berkeley",
   };
 
   const mappedName = abbreviationMap[normalizedName];

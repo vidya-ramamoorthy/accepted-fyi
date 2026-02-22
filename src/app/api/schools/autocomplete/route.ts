@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchSchools } from "@/lib/db/queries/schools";
+import { logger } from "@/lib/logger";
 
 const MINIMUM_QUERY_LENGTH = 2;
 
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     }));
     return NextResponse.json({ schools });
   } catch (error) {
-    console.error("Autocomplete search failed:", error);
+    logger.error("schools.autocomplete_failed", { error });
     return NextResponse.json({ schools: [] });
   }
 }
