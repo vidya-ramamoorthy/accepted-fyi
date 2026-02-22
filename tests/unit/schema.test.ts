@@ -53,6 +53,8 @@ describe("Database Schema", () => {
     expect(columns).toContain("financialAidApplied");
     expect(columns).toContain("geographicClassification");
     expect(columns).toContain("apCoursesCount");
+    expect(columns).toContain("ibCoursesCount");
+    expect(columns).toContain("honorsCoursesCount");
     expect(columns).toContain("scholarshipOffered");
     expect(columns).toContain("willAttend");
     expect(columns).toContain("waitlistOutcome");

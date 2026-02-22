@@ -41,6 +41,9 @@ export async function GET(request: Request) {
           await findOrCreateUser(extractUserProfileData(user));
         } catch (profileError) {
           console.error("Profile creation failed during auth callback:", profileError);
+          return NextResponse.redirect(
+            `${origin}/login?error=profile_setup_failed`
+          );
         }
       }
 

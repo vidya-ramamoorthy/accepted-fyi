@@ -10,17 +10,61 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+// Mock school data returned by the autocomplete API
+const MOCK_SCHOOL_RESPONSES: Record<string, { schools: { id: string; name: string; state: string; city: string }[] }> = {
+  Stanford: {
+    schools: [
+      { id: "1", name: "Stanford University", state: "CA", city: "Stanford" },
+    ],
+  },
+  Harvard: {
+    schools: [
+      { id: "2", name: "Harvard University", state: "MA", city: "Cambridge" },
+    ],
+  },
+  Brown: {
+    schools: [
+      { id: "3", name: "Brown University", state: "RI", city: "Providence" },
+    ],
+  },
+  Yale: {
+    schools: [
+      { id: "4", name: "Yale University", state: "CT", city: "New Haven" },
+    ],
+  },
+  Princeton: {
+    schools: [
+      { id: "5", name: "Princeton University", state: "NJ", city: "Princeton" },
+    ],
+  },
+};
+
+function createMockFetch() {
+  return vi.fn((url: string) => {
+    const queryMatch = url.match(/[?&]q=([^&]+)/);
+    const query = queryMatch ? decodeURIComponent(queryMatch[1]) : "";
+    const responseData = MOCK_SCHOOL_RESPONSES[query] ?? { schools: [] };
+
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(responseData),
+    });
+  }) as unknown as typeof globalThis.fetch;
+}
+
 describe("SchoolAutocomplete", () => {
   const mockOnSelect = vi.fn();
 
   beforeEach(() => {
     mockOnSelect.mockClear();
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    globalThis.fetch = createMockFetch();
   });
 
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("should render the input field", () => {
@@ -70,7 +114,7 @@ describe("SchoolAutocomplete", () => {
       />
     );
 
-    vi.advanceTimersByTime(200);
+    await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => {
       const listbox = screen.queryByRole("listbox");
@@ -81,14 +125,15 @@ describe("SchoolAutocomplete", () => {
     expect(options.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("should not show suggestions for single character input", () => {
+  it("should not show suggestions for single character input", async () => {
     render(
       <SchoolAutocomplete value="S" onSelect={mockOnSelect} id="schoolName" />
     );
 
     const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "S" } });
-    vi.advanceTimersByTime(200);
+
+    await vi.advanceTimersByTimeAsync(200);
 
     const listbox = screen.queryByRole("listbox");
     expect(listbox).not.toBeInTheDocument();
@@ -110,7 +155,7 @@ describe("SchoolAutocomplete", () => {
       />
     );
 
-    vi.advanceTimersByTime(200);
+    await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => {
       expect(screen.queryByRole("listbox")).toBeInTheDocument();
@@ -120,7 +165,7 @@ describe("SchoolAutocomplete", () => {
     const button = firstOption.querySelector("button")!;
     fireEvent.click(button);
 
-    expect(mockOnSelect).toHaveBeenCalledWith("Stanford University", "CA");
+    expect(mockOnSelect).toHaveBeenCalledWith("Stanford University", "CA", "Stanford");
   });
 
   it("should close suggestions when Escape is pressed", async () => {
@@ -139,7 +184,7 @@ describe("SchoolAutocomplete", () => {
       />
     );
 
-    vi.advanceTimersByTime(200);
+    await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => {
       expect(screen.queryByRole("listbox")).toBeInTheDocument();
@@ -166,7 +211,7 @@ describe("SchoolAutocomplete", () => {
       />
     );
 
-    vi.advanceTimersByTime(200);
+    await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => {
       expect(screen.queryByRole("listbox")).toBeInTheDocument();
@@ -194,7 +239,7 @@ describe("SchoolAutocomplete", () => {
       />
     );
 
-    vi.advanceTimersByTime(200);
+    await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => {
       expect(screen.queryByRole("listbox")).toBeInTheDocument();
@@ -203,7 +248,7 @@ describe("SchoolAutocomplete", () => {
     fireEvent.keyDown(input, { key: "ArrowDown" });
     fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(mockOnSelect).toHaveBeenCalledWith("Yale University", "CT");
+    expect(mockOnSelect).toHaveBeenCalledWith("Yale University", "CT", "New Haven");
   });
 
   it("should display school state alongside name in suggestions", async () => {
@@ -222,13 +267,13 @@ describe("SchoolAutocomplete", () => {
       />
     );
 
-    vi.advanceTimersByTime(200);
+    await vi.advanceTimersByTimeAsync(200);
 
     await waitFor(() => {
       expect(screen.queryByRole("listbox")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("NJ")).toBeInTheDocument();
+    expect(screen.getByText("Princeton, NJ")).toBeInTheDocument();
   });
 
   it("should pass required attribute to the input", () => {

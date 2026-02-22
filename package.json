@@ -11,13 +11,17 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "ingest:scorecard": "tsx scripts/ingest-scorecard.ts",
+    "ingest:reddit": "tsx scripts/ingest-reddit.ts",
+    "ingest:cds": "tsx scripts/ingest-cds.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.96.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.2",
+    "@vercel/analytics": "^1.6.1",
     "drizzle-kit": "^0.31.9",
     "drizzle-orm": "^0.45.1",
     "next": "16.1.6",
@@ -33,10 +37,13 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.4",
+    "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jsdom": "^28.1.0",
+    "puppeteer": "^24.37.5",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.0.18"
   }

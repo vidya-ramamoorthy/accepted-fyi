@@ -267,6 +267,38 @@ describe("validateSubmission", () => {
     }
   });
 
+  it("should accept valid IB courses count", () => {
+    const result = validateSubmission({ ...validInput, ibCoursesCount: "6" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ibCoursesCount).toBe(6);
+    }
+  });
+
+  it("should reject IB courses count above 30", () => {
+    const result = validateSubmission({ ...validInput, ibCoursesCount: "31" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.field === "ibCoursesCount")).toBe(true);
+    }
+  });
+
+  it("should accept valid Honors courses count", () => {
+    const result = validateSubmission({ ...validInput, honorsCoursesCount: "4" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.honorsCoursesCount).toBe(4);
+    }
+  });
+
+  it("should reject Honors courses count above 30", () => {
+    const result = validateSubmission({ ...validInput, honorsCoursesCount: "31" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((error) => error.field === "honorsCoursesCount")).toBe(true);
+    }
+  });
+
   it("should accept valid scholarship types", () => {
     for (const scholarship of ["none", "merit", "need_based", "both"]) {
       const result = validateSubmission({ ...validInput, scholarshipOffered: scholarship });
@@ -312,6 +344,8 @@ describe("validateSubmission", () => {
       expect(result.data.highSchoolType).toBeNull();
       expect(result.data.geographicClassification).toBeNull();
       expect(result.data.apCoursesCount).toBeNull();
+      expect(result.data.ibCoursesCount).toBeNull();
+      expect(result.data.honorsCoursesCount).toBeNull();
       expect(result.data.scholarshipOffered).toBeNull();
       expect(result.data.willAttend).toBeNull();
       expect(result.data.waitlistOutcome).toBeNull();

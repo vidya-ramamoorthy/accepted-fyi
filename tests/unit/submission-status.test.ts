@@ -61,6 +61,8 @@ describe("Submission schema completeness", () => {
       "financialAidApplied",
       "geographicClassification",
       "apCoursesCount",
+      "ibCoursesCount",
+      "honorsCoursesCount",
       "scholarshipOffered",
       "willAttend",
       "waitlistOutcome",

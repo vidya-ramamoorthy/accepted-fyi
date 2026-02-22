@@ -78,6 +78,8 @@ export interface SubmissionInput {
   financialAidApplied?: boolean;
   geographicClassification?: string;
   apCoursesCount?: string;
+  ibCoursesCount?: string;
+  honorsCoursesCount?: string;
   scholarshipOffered?: string;
   willAttend?: string;
   waitlistOutcome?: string;
@@ -108,6 +110,8 @@ export interface ValidatedSubmission {
   financialAidApplied: boolean | null;
   geographicClassification: GeographicClassification | null;
   apCoursesCount: number | null;
+  ibCoursesCount: number | null;
+  honorsCoursesCount: number | null;
   scholarshipOffered: ScholarshipType | null;
   willAttend: AttendanceIntent | null;
   waitlistOutcome: WaitlistOutcome | null;
@@ -124,6 +128,16 @@ export function validateSubmission(
   }
   if (schoolName && schoolName.length > 255) {
     errors.push({ field: "schoolName", message: "School name must be 255 characters or less" });
+  }
+
+  const schoolState = input.schoolState?.trim().toUpperCase();
+  if (schoolState && !STATE_PATTERN.test(schoolState)) {
+    errors.push({ field: "schoolState", message: "School state must be a 2-letter state code" });
+  }
+
+  const schoolCity = input.schoolCity?.trim();
+  if (schoolCity && schoolCity.length > 100) {
+    errors.push({ field: "schoolCity", message: "School city must be 100 characters or less" });
   }
 
   if (!VALID_DECISIONS.includes(input.decision as AdmissionDecision)) {
@@ -175,11 +189,35 @@ export function validateSubmission(
     }
   }
 
+  const MAX_EXTRACURRICULARS = 20;
+  const MAX_EXTRACURRICULAR_LENGTH = 200;
+  const MAX_INTENDED_MAJOR_LENGTH = 100;
+
   const extracurriculars = (input.extracurriculars ?? [])
     .map((ec) => ec.trim())
     .filter((ec) => ec.length > 0);
 
+  if (extracurriculars.length > MAX_EXTRACURRICULARS) {
+    errors.push({ field: "extracurriculars", message: `Maximum ${MAX_EXTRACURRICULARS} extracurriculars allowed` });
+  }
+
+  const oversizedExtracurricular = extracurriculars.find(
+    (ec) => ec.length > MAX_EXTRACURRICULAR_LENGTH
+  );
+  if (oversizedExtracurricular) {
+    errors.push({
+      field: "extracurriculars",
+      message: `Each extracurricular must be ${MAX_EXTRACURRICULAR_LENGTH} characters or less`,
+    });
+  }
+
   const intendedMajor = input.intendedMajor?.trim() || null;
+  if (intendedMajor && intendedMajor.length > MAX_INTENDED_MAJOR_LENGTH) {
+    errors.push({
+      field: "intendedMajor",
+      message: `Intended major must be ${MAX_INTENDED_MAJOR_LENGTH} characters or less`,
+    });
+  }
 
   // Validate new optional fields
   let highSchoolType: HighSchoolType | null = null;
@@ -205,6 +243,22 @@ export function validateSubmission(
     apCoursesCount = parseInt(input.apCoursesCount, 10);
     if (isNaN(apCoursesCount) || apCoursesCount < 0 || apCoursesCount > 30) {
       errors.push({ field: "apCoursesCount", message: "AP courses count must be between 0 and 30" });
+    }
+  }
+
+  let ibCoursesCount: number | null = null;
+  if (input.ibCoursesCount) {
+    ibCoursesCount = parseInt(input.ibCoursesCount, 10);
+    if (isNaN(ibCoursesCount) || ibCoursesCount < 0 || ibCoursesCount > 30) {
+      errors.push({ field: "ibCoursesCount", message: "IB courses count must be between 0 and 30" });
+    }
+  }
+
+  let honorsCoursesCount: number | null = null;
+  if (input.honorsCoursesCount) {
+    honorsCoursesCount = parseInt(input.honorsCoursesCount, 10);
+    if (isNaN(honorsCoursesCount) || honorsCoursesCount < 0 || honorsCoursesCount > 30) {
+      errors.push({ field: "honorsCoursesCount", message: "Honors courses count must be between 0 and 30" });
     }
   }
 
@@ -247,8 +301,8 @@ export function validateSubmission(
     success: true,
     data: {
       schoolName: schoolName!,
-      schoolState: input.schoolState?.trim().toUpperCase() || stateOfResidence!,
-      schoolCity: input.schoolCity?.trim() || "",
+      schoolState: schoolState || stateOfResidence!,
+      schoolCity: schoolCity || "",
       decision: input.decision as AdmissionDecision,
       applicationRound: input.applicationRound as typeof VALID_APPLICATION_ROUNDS[number],
       admissionCycle: input.admissionCycle,
@@ -265,6 +319,8 @@ export function validateSubmission(
       financialAidApplied,
       geographicClassification,
       apCoursesCount,
+      ibCoursesCount,
+      honorsCoursesCount,
       scholarshipOffered,
       willAttend,
       waitlistOutcome,

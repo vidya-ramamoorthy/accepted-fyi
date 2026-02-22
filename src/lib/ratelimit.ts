@@ -1,5 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import type { NextRequest } from "next/server";
 
 function createRedisClient(): Redis | null {
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
@@ -16,12 +17,14 @@ const redis = createRedisClient();
 
 /**
  * Rate limiter for submission creation.
- * Allows 5 submissions per hour per user.
+ * Allows 15 submissions per hour per user.
+ * Set high for launch to maximize data collection from competitive applicants
+ * who may bulk-enter 15+ decisions in one sitting.
  */
 export const submissionRateLimiter = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(5, "1 h"),
+      limiter: Ratelimit.slidingWindow(15, "1 h"),
       prefix: "ratelimit:submissions",
     })
   : null;
@@ -35,6 +38,32 @@ export const apiReadRateLimiter = redis
       redis,
       limiter: Ratelimit.slidingWindow(60, "1 m"),
       prefix: "ratelimit:api-read",
+    })
+  : null;
+
+/**
+ * IP-based rate limiter for submissions.
+ * 30/hour per IP — catches multi-account abuse from same device.
+ * Set higher than per-user limit to avoid false positives on shared
+ * networks (dorms, libraries, coffee shops).
+ */
+export const ipSubmissionRateLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(30, "1 h"),
+      prefix: "ratelimit:ip-submissions",
+    })
+  : null;
+
+/**
+ * IP-based rate limiter for read requests.
+ * 50/minute per IP — prevents scraping from a single IP.
+ */
+export const ipReadRateLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(50, "1 m"),
+      prefix: "ratelimit:ip-read",
     })
   : null;
 
@@ -60,4 +89,16 @@ export async function checkRateLimit(
   }
 
   return { allowed: true };
+}
+
+/**
+ * Extracts the client IP address from a Next.js request.
+ * Vercel sets x-forwarded-for; falls back to x-real-ip, then "unknown".
+ */
+export function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+  return request.headers.get("x-real-ip") ?? "unknown";
 }

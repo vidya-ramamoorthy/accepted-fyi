@@ -1,9 +1,10 @@
-import { eq, and, ilike, gte, lte, sql, desc } from "drizzle-orm";
+import { eq, and, ilike, gte, lte, sql, desc, or } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { admissionSubmissions, schools } from "@/lib/db/schema";
 import { escapeLikePattern } from "@/lib/utils/escape-like";
 import type {
   AdmissionDecision,
+  DataSource,
   HighSchoolType,
   GeographicClassification,
   ScholarshipType,
@@ -12,9 +13,30 @@ import type {
 } from "@/types/database";
 
 const MAX_PAGE_SIZE = 100;
+const PENDING_REVIEW_DELAY_HOURS = 2;
+
+/**
+ * Visibility condition: show submissions that are either:
+ * 1. Explicitly "visible", OR
+ * 2. "pending_review" but older than PENDING_REVIEW_DELAY_HOURS
+ *    (auto-promotes suspicious submissions after a cooling period)
+ */
+function visibleSubmissionCondition() {
+  return or(
+    eq(admissionSubmissions.submissionStatus, "visible"),
+    and(
+      eq(admissionSubmissions.submissionStatus, "pending_review"),
+      lte(
+        admissionSubmissions.createdAt,
+        sql`now() - interval '${sql.raw(String(PENDING_REVIEW_DELAY_HOURS))} hours'`
+      )
+    )
+  );
+}
 
 const submissionWithSchoolFields = {
   id: admissionSubmissions.id,
+  dataSource: admissionSubmissions.dataSource,
   decision: admissionSubmissions.decision,
   applicationRound: admissionSubmissions.applicationRound,
   admissionCycle: admissionSubmissions.admissionCycle,
@@ -31,6 +53,8 @@ const submissionWithSchoolFields = {
   financialAidApplied: admissionSubmissions.financialAidApplied,
   geographicClassification: admissionSubmissions.geographicClassification,
   apCoursesCount: admissionSubmissions.apCoursesCount,
+  ibCoursesCount: admissionSubmissions.ibCoursesCount,
+  honorsCoursesCount: admissionSubmissions.honorsCoursesCount,
   scholarshipOffered: admissionSubmissions.scholarshipOffered,
   willAttend: admissionSubmissions.willAttend,
   waitlistOutcome: admissionSubmissions.waitlistOutcome,
@@ -45,6 +69,8 @@ export interface SubmissionFilters {
   decision?: AdmissionDecision;
   admissionCycle?: string;
   stateOfResidence?: string;
+  dataSource?: DataSource;
+  intendedMajor?: string;
   minGpa?: number;
   maxGpa?: number;
   minSat?: number;
@@ -72,9 +98,12 @@ export async function createSubmission(data: {
   financialAidApplied: boolean | null;
   geographicClassification: GeographicClassification | null;
   apCoursesCount: number | null;
+  ibCoursesCount: number | null;
+  honorsCoursesCount: number | null;
   scholarshipOffered: ScholarshipType | null;
   willAttend: AttendanceIntent | null;
   waitlistOutcome: WaitlistOutcome | null;
+  submissionStatus?: "visible" | "pending_review" | "flagged";
 }) {
   const db = getDb();
   const [submission] = await db
@@ -98,10 +127,12 @@ export async function createSubmission(data: {
       financialAidApplied: data.financialAidApplied,
       geographicClassification: data.geographicClassification,
       apCoursesCount: data.apCoursesCount,
+      ibCoursesCount: data.ibCoursesCount,
+      honorsCoursesCount: data.honorsCoursesCount,
       scholarshipOffered: data.scholarshipOffered,
       willAttend: data.willAttend,
       waitlistOutcome: data.waitlistOutcome,
-      submissionStatus: "visible",
+      submissionStatus: data.submissionStatus ?? "visible",
     })
     .returning();
 
@@ -114,7 +145,7 @@ export async function getSubmissionsWithSchool(filters: SubmissionFilters = {}) 
   const page = Math.max(1, filters.page ?? 1);
   const offset = (page - 1) * pageSize;
 
-  const conditions = [eq(admissionSubmissions.submissionStatus, "visible")];
+  const conditions = [visibleSubmissionCondition()!];
 
   if (filters.schoolName) {
     const escapedName = escapeLikePattern(filters.schoolName);
@@ -128,6 +159,13 @@ export async function getSubmissionsWithSchool(filters: SubmissionFilters = {}) 
   }
   if (filters.stateOfResidence) {
     conditions.push(eq(admissionSubmissions.stateOfResidence, filters.stateOfResidence.toUpperCase()));
+  }
+  if (filters.dataSource) {
+    conditions.push(eq(admissionSubmissions.dataSource, filters.dataSource));
+  }
+  if (filters.intendedMajor) {
+    const escapedMajor = escapeLikePattern(filters.intendedMajor);
+    conditions.push(ilike(admissionSubmissions.intendedMajor, `%${escapedMajor}%`));
   }
   if (filters.minGpa !== undefined) {
     conditions.push(gte(admissionSubmissions.gpaUnweighted, filters.minGpa.toString()));
@@ -183,6 +221,7 @@ export async function getSubmissionsForSchool(schoolId: string) {
   return db
     .select({
       id: admissionSubmissions.id,
+      dataSource: admissionSubmissions.dataSource,
       decision: admissionSubmissions.decision,
       applicationRound: admissionSubmissions.applicationRound,
       admissionCycle: admissionSubmissions.admissionCycle,
@@ -192,6 +231,18 @@ export async function getSubmissionsForSchool(schoolId: string) {
       actScore: admissionSubmissions.actScore,
       intendedMajor: admissionSubmissions.intendedMajor,
       stateOfResidence: admissionSubmissions.stateOfResidence,
+      extracurriculars: admissionSubmissions.extracurriculars,
+      highSchoolType: admissionSubmissions.highSchoolType,
+      firstGeneration: admissionSubmissions.firstGeneration,
+      legacyStatus: admissionSubmissions.legacyStatus,
+      financialAidApplied: admissionSubmissions.financialAidApplied,
+      geographicClassification: admissionSubmissions.geographicClassification,
+      apCoursesCount: admissionSubmissions.apCoursesCount,
+      ibCoursesCount: admissionSubmissions.ibCoursesCount,
+      honorsCoursesCount: admissionSubmissions.honorsCoursesCount,
+      scholarshipOffered: admissionSubmissions.scholarshipOffered,
+      willAttend: admissionSubmissions.willAttend,
+      waitlistOutcome: admissionSubmissions.waitlistOutcome,
       verificationTier: admissionSubmissions.verificationTier,
       createdAt: admissionSubmissions.createdAt,
     })
@@ -199,7 +250,7 @@ export async function getSubmissionsForSchool(schoolId: string) {
     .where(
       and(
         eq(admissionSubmissions.schoolId, schoolId),
-        eq(admissionSubmissions.submissionStatus, "visible")
+        visibleSubmissionCondition()
       )
     )
     .orderBy(desc(admissionSubmissions.createdAt));

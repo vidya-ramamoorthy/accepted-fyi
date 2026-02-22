@@ -59,15 +59,18 @@ const WAITLIST_OUTCOME_OPTIONS = [
 ];
 
 const selectClassName =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+  "mt-1 w-full rounded-md border border-slate-700 bg-slate-800/50 px-3 py-3 text-sm text-slate-200 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500";
 
 const inputClassName =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+  "mt-1 w-full rounded-md border border-slate-700 bg-slate-800/50 px-3 py-3 text-sm text-slate-200 placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500";
 
 export default function SubmitPage() {
   const router = useRouter();
+  const [formLoadedAt] = useState(() => Date.now());
+  const [honeypotValue, setHoneypotValue] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [schoolState, setSchoolState] = useState("");
+  const [schoolCity, setSchoolCity] = useState("");
   const [decision, setDecision] = useState<AdmissionDecision>("accepted");
   const [applicationRound, setApplicationRound] = useState("regular");
   const [gpaUnweighted, setGpaUnweighted] = useState("");
@@ -84,12 +87,15 @@ export default function SubmitPage() {
   const [financialAidApplied, setFinancialAidApplied] = useState<boolean | undefined>(undefined);
   const [geographicClassification, setGeographicClassification] = useState("");
   const [apCoursesCount, setApCoursesCount] = useState("");
+  const [ibCoursesCount, setIbCoursesCount] = useState("");
+  const [honorsCoursesCount, setHonorsCoursesCount] = useState("");
   const [scholarshipOffered, setScholarshipOffered] = useState("");
   const [willAttend, setWillAttend] = useState("");
   const [waitlistOutcome, setWaitlistOutcome] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
 
   const REDIRECT_DELAY_MS = 1500;
 
@@ -108,6 +114,9 @@ export default function SubmitPage() {
         body: JSON.stringify({
           schoolName,
           schoolState: schoolState || undefined,
+          schoolCity: schoolCity || undefined,
+          _formLoadedAt: formLoadedAt,
+          _website: honeypotValue,
           decision,
           applicationRound,
           gpaUnweighted: gpaUnweighted || undefined,
@@ -127,6 +136,8 @@ export default function SubmitPage() {
           financialAidApplied,
           geographicClassification: geographicClassification || undefined,
           apCoursesCount: apCoursesCount || undefined,
+          ibCoursesCount: ibCoursesCount || undefined,
+          honorsCoursesCount: honorsCoursesCount || undefined,
           scholarshipOffered: scholarshipOffered || undefined,
           willAttend: willAttend || undefined,
           waitlistOutcome: (showWaitlistOutcome && waitlistOutcome) || undefined,
@@ -156,52 +167,67 @@ export default function SubmitPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-white">
         Submit Your Admission Result
       </h1>
-      <p className="mt-2 text-gray-600">
-        Share your results to unlock access to everyone else&apos;s data.
+      <p className="mt-2 text-slate-400">
+        Share your results to help others make data-driven college decisions.
       </p>
 
       {errorMessage && (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
           {errorMessage}
         </div>
       )}
 
       {successMessage && (
-        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+        <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400">
           {successMessage}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        {/* School & Decision */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">School &amp; Decision</h2>
+        {/* Honeypot — invisible to humans, filled by bots */}
+        <div aria-hidden="true" className="absolute left-[-9999px] h-0 overflow-hidden">
+          <label htmlFor="website">Website</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypotValue}
+            onChange={(event) => setHoneypotValue(event.target.value)}
+          />
+        </div>
+
+        {/* School & Decision — Core Fields */}
+        <div className="rounded-xl border border-white/5 bg-slate-900/50 p-6 space-y-4">
+          <h2 className="font-semibold text-white">School &amp; Decision</h2>
 
           <div>
-            <label htmlFor="schoolName" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="schoolName" className="block text-sm font-medium text-slate-300">
               School Name
             </label>
             <SchoolAutocomplete
               id="schoolName"
               value={schoolName}
-              onSelect={(name, state) => {
+              onSelect={(name, state, city) => {
                 setSchoolName(name);
                 if (state) setSchoolState(state);
+                if (city) setSchoolCity(city);
               }}
               required
               className={inputClassName}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-slate-500">
               Start typing to see suggestions, or enter any school name
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="decision" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="decision" className="block text-sm font-medium text-slate-300">
                 Decision
               </label>
               <select
@@ -218,7 +244,7 @@ export default function SubmitPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="applicationRound" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="applicationRound" className="block text-sm font-medium text-slate-300">
                 Application Round
               </label>
               <select
@@ -236,24 +262,41 @@ export default function SubmitPage() {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="admissionCycle" className="block text-sm font-medium text-gray-700">
-              Admission Cycle
-            </label>
-            <input
-              id="admissionCycle"
-              type="text"
-              required
-              value={admissionCycle}
-              onChange={(event) => setAdmissionCycle(event.target.value)}
-              placeholder="e.g., 2025-2026"
-              className={inputClassName}
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="admissionCycle" className="block text-sm font-medium text-slate-300">
+                Admission Cycle
+              </label>
+              <input
+                id="admissionCycle"
+                type="text"
+                required
+                value={admissionCycle}
+                onChange={(event) => setAdmissionCycle(event.target.value)}
+                placeholder="e.g., 2025-2026"
+                className={inputClassName}
+              />
+            </div>
+            <div>
+              <label htmlFor="stateOfResidence" className="block text-sm font-medium text-slate-300">
+                State of Residence
+              </label>
+              <input
+                id="stateOfResidence"
+                type="text"
+                required
+                maxLength={2}
+                value={stateOfResidence}
+                onChange={(event) => setStateOfResidence(event.target.value.toUpperCase())}
+                placeholder="e.g., CA"
+                className={`${inputClassName} uppercase`}
+              />
+            </div>
           </div>
 
           {showWaitlistOutcome && (
             <div>
-              <label htmlFor="waitlistOutcome" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="waitlistOutcome" className="block text-sm font-medium text-slate-300">
                 Waitlist Outcome
               </label>
               <select
@@ -270,52 +313,15 @@ export default function SubmitPage() {
               </select>
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="scholarshipOffered" className="block text-sm font-medium text-gray-700">
-                Scholarship Offered
-              </label>
-              <select
-                id="scholarshipOffered"
-                value={scholarshipOffered}
-                onChange={(event) => setScholarshipOffered(event.target.value)}
-                className={selectClassName}
-              >
-                {SCHOLARSHIP_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="willAttend" className="block text-sm font-medium text-gray-700">
-                Will You Attend?
-              </label>
-              <select
-                id="willAttend"
-                value={willAttend}
-                onChange={(event) => setWillAttend(event.target.value)}
-                className={selectClassName}
-              >
-                {ATTENDANCE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
         </div>
 
-        {/* Your Stats */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">Your Stats</h2>
+        {/* Your Stats — Core Fields */}
+        <div className="rounded-xl border border-white/5 bg-slate-900/50 p-6 space-y-4">
+          <h2 className="font-semibold text-white">Your Stats</h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="gpaUnweighted" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="gpaUnweighted" className="block text-sm font-medium text-slate-300">
                 GPA (Unweighted)
               </label>
               <input
@@ -331,26 +337,7 @@ export default function SubmitPage() {
               />
             </div>
             <div>
-              <label htmlFor="gpaWeighted" className="block text-sm font-medium text-gray-700">
-                GPA (Weighted)
-              </label>
-              <input
-                id="gpaWeighted"
-                type="number"
-                step="0.01"
-                min="0"
-                max="5.0"
-                value={gpaWeighted}
-                onChange={(event) => setGpaWeighted(event.target.value)}
-                placeholder="e.g., 4.32"
-                className={inputClassName}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="satScore" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="satScore" className="block text-sm font-medium text-slate-300">
                 SAT Score
               </label>
               <input
@@ -364,8 +351,24 @@ export default function SubmitPage() {
                 className={inputClassName}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="actScore" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="intendedMajor" className="block text-sm font-medium text-slate-300">
+                Intended Major
+              </label>
+              <input
+                id="intendedMajor"
+                type="text"
+                value={intendedMajor}
+                onChange={(event) => setIntendedMajor(event.target.value)}
+                placeholder="e.g., Computer Science"
+                className={inputClassName}
+              />
+            </div>
+            <div>
+              <label htmlFor="actScore" className="block text-sm font-medium text-slate-300">
                 ACT Score
               </label>
               <input
@@ -380,204 +383,278 @@ export default function SubmitPage() {
               />
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="intendedMajor" className="block text-sm font-medium text-gray-700">
-                Intended Major
-              </label>
-              <input
-                id="intendedMajor"
-                type="text"
-                value={intendedMajor}
-                onChange={(event) => setIntendedMajor(event.target.value)}
-                placeholder="e.g., Computer Science"
-                className={inputClassName}
-              />
-            </div>
-            <div>
-              <label htmlFor="apCoursesCount" className="block text-sm font-medium text-gray-700">
-                Number of AP/IB Courses
-              </label>
-              <input
-                id="apCoursesCount"
-                type="number"
-                min="0"
-                max="30"
-                value={apCoursesCount}
-                onChange={(event) => setApCoursesCount(event.target.value)}
-                placeholder="e.g., 8"
-                className={inputClassName}
-              />
-            </div>
-          </div>
         </div>
 
-        {/* Your Background */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">Your Background</h2>
-          <p className="text-xs text-gray-500">
-            All fields in this section are optional. More context helps others compare results.
-          </p>
+        {/* Optional Details — Collapsible */}
+        <div className="rounded-xl border border-white/5 bg-slate-900/50">
+          <button
+            type="button"
+            onClick={() => setShowOptionalFields(!showOptionalFields)}
+            className="flex w-full items-center justify-between p-6 text-left"
+          >
+            <div>
+              <h2 className="font-semibold text-white">More Details</h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Optional — more context helps others compare results
+              </p>
+            </div>
+            <svg
+              className={`h-5 w-5 text-slate-400 transition-transform ${showOptionalFields ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="stateOfResidence" className="block text-sm font-medium text-gray-700">
-                State of Residence
-              </label>
-              <input
-                id="stateOfResidence"
-                type="text"
-                required
-                maxLength={2}
-                value={stateOfResidence}
-                onChange={(event) => setStateOfResidence(event.target.value.toUpperCase())}
-                placeholder="e.g., CA"
-                className={`${inputClassName} uppercase`}
-              />
-            </div>
-            <div>
-              <label htmlFor="geographicClassification" className="block text-sm font-medium text-gray-700">
-                Area Type
-              </label>
-              <select
-                id="geographicClassification"
-                value={geographicClassification}
-                onChange={(event) => setGeographicClassification(event.target.value)}
-                className={selectClassName}
-              >
-                {GEOGRAPHIC_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          {showOptionalFields && (
+            <div className="space-y-4 border-t border-white/5 px-6 pb-6 pt-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="gpaWeighted" className="block text-sm font-medium text-slate-300">
+                    GPA (Weighted)
+                  </label>
+                  <input
+                    id="gpaWeighted"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="5.0"
+                    value={gpaWeighted}
+                    onChange={(event) => setGpaWeighted(event.target.value)}
+                    placeholder="e.g., 4.32"
+                    className={inputClassName}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="highSchoolType" className="block text-sm font-medium text-slate-300">
+                    High School Type
+                  </label>
+                  <select
+                    id="highSchoolType"
+                    value={highSchoolType}
+                    onChange={(event) => setHighSchoolType(event.target.value)}
+                    className={selectClassName}
+                  >
+                    {HIGH_SCHOOL_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="highSchoolType" className="block text-sm font-medium text-gray-700">
-                High School Type
-              </label>
-              <select
-                id="highSchoolType"
-                value={highSchoolType}
-                onChange={(event) => setHighSchoolType(event.target.value)}
-                className={selectClassName}
-              >
-                {HIGH_SCHOOL_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                First-Generation Student
-              </label>
-              <div className="mt-2 flex gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="apCoursesCount" className="block text-sm font-medium text-slate-300">
+                    AP Courses
+                  </label>
                   <input
-                    type="radio"
-                    name="firstGeneration"
-                    checked={firstGeneration === true}
-                    onChange={() => setFirstGeneration(true)}
-                    className="text-blue-600"
+                    id="apCoursesCount"
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={apCoursesCount}
+                    onChange={(event) => setApCoursesCount(event.target.value)}
+                    placeholder="e.g., 8"
+                    className={inputClassName}
                   />
-                  Yes
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                </div>
+                <div>
+                  <label htmlFor="ibCoursesCount" className="block text-sm font-medium text-slate-300">
+                    IB Courses
+                  </label>
                   <input
-                    type="radio"
-                    name="firstGeneration"
-                    checked={firstGeneration === false}
-                    onChange={() => setFirstGeneration(false)}
-                    className="text-blue-600"
+                    id="ibCoursesCount"
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={ibCoursesCount}
+                    onChange={(event) => setIbCoursesCount(event.target.value)}
+                    placeholder="e.g., 6"
+                    className={inputClassName}
                   />
-                  No
+                </div>
+                <div>
+                  <label htmlFor="honorsCoursesCount" className="block text-sm font-medium text-slate-300">
+                    Honors Courses
+                  </label>
+                  <input
+                    id="honorsCoursesCount"
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={honorsCoursesCount}
+                    onChange={(event) => setHonorsCoursesCount(event.target.value)}
+                    placeholder="e.g., 4"
+                    className={inputClassName}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="geographicClassification" className="block text-sm font-medium text-slate-300">
+                  Area Type
                 </label>
+                <select
+                  id="geographicClassification"
+                  value={geographicClassification}
+                  onChange={(event) => setGeographicClassification(event.target.value)}
+                  className={selectClassName}
+                >
+                  {GEOGRAPHIC_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300">
+                    First-Generation
+                  </label>
+                  <div className="mt-2 flex gap-4">
+                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                      <input
+                        type="radio"
+                        name="firstGeneration"
+                        checked={firstGeneration === true}
+                        onChange={() => setFirstGeneration(true)}
+                        className="text-violet-600"
+                      />
+                      Yes
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                      <input
+                        type="radio"
+                        name="firstGeneration"
+                        checked={firstGeneration === false}
+                        onChange={() => setFirstGeneration(false)}
+                        className="text-violet-600"
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300">
+                    Legacy
+                  </label>
+                  <div className="mt-2 flex gap-4">
+                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                      <input
+                        type="radio"
+                        name="legacyStatus"
+                        checked={legacyStatus === true}
+                        onChange={() => setLegacyStatus(true)}
+                        className="text-violet-600"
+                      />
+                      Yes
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                      <input
+                        type="radio"
+                        name="legacyStatus"
+                        checked={legacyStatus === false}
+                        onChange={() => setLegacyStatus(false)}
+                        className="text-violet-600"
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300">
+                    Financial Aid
+                  </label>
+                  <div className="mt-2 flex gap-4">
+                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                      <input
+                        type="radio"
+                        name="financialAidApplied"
+                        checked={financialAidApplied === true}
+                        onChange={() => setFinancialAidApplied(true)}
+                        className="text-violet-600"
+                      />
+                      Yes
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-300">
+                      <input
+                        type="radio"
+                        name="financialAidApplied"
+                        checked={financialAidApplied === false}
+                        onChange={() => setFinancialAidApplied(false)}
+                        className="text-violet-600"
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="extracurriculars" className="block text-sm font-medium text-slate-300">
+                  Extracurriculars (comma-separated)
+                </label>
+                <textarea
+                  id="extracurriculars"
+                  rows={3}
+                  value={extracurriculars}
+                  onChange={(event) => setExtracurriculars(event.target.value)}
+                  placeholder="e.g., Debate Team Captain, Math Olympiad, Volunteer at Food Bank"
+                  className={inputClassName}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="scholarshipOffered" className="block text-sm font-medium text-slate-300">
+                    Scholarship Offered
+                  </label>
+                  <select
+                    id="scholarshipOffered"
+                    value={scholarshipOffered}
+                    onChange={(event) => setScholarshipOffered(event.target.value)}
+                    className={selectClassName}
+                  >
+                    {SCHOLARSHIP_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="willAttend" className="block text-sm font-medium text-slate-300">
+                    Will You Attend?
+                  </label>
+                  <select
+                    id="willAttend"
+                    value={willAttend}
+                    onChange={(event) => setWillAttend(event.target.value)}
+                    className={selectClassName}
+                  >
+                    {ATTENDANCE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Legacy at This School
-              </label>
-              <div className="mt-2 flex gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name="legacyStatus"
-                    checked={legacyStatus === true}
-                    onChange={() => setLegacyStatus(true)}
-                    className="text-blue-600"
-                  />
-                  Yes
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name="legacyStatus"
-                    checked={legacyStatus === false}
-                    onChange={() => setLegacyStatus(false)}
-                    className="text-blue-600"
-                  />
-                  No
-                </label>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Applied for Financial Aid
-              </label>
-              <div className="mt-2 flex gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name="financialAidApplied"
-                    checked={financialAidApplied === true}
-                    onChange={() => setFinancialAidApplied(true)}
-                    className="text-blue-600"
-                  />
-                  Yes
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name="financialAidApplied"
-                    checked={financialAidApplied === false}
-                    onChange={() => setFinancialAidApplied(false)}
-                    className="text-blue-600"
-                  />
-                  No
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="extracurriculars" className="block text-sm font-medium text-gray-700">
-              Extracurriculars (comma-separated)
-            </label>
-            <textarea
-              id="extracurriculars"
-              rows={3}
-              value={extracurriculars}
-              onChange={(event) => setExtracurriculars(event.target.value)}
-              placeholder="e.g., Debate Team Captain, Math Olympiad, Volunteer at Food Bank, Varsity Tennis"
-              className={inputClassName}
-            />
-          </div>
+          )}
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/25 transition-all hover:shadow-xl hover:shadow-violet-600/30 disabled:opacity-50"
         >
           {isSubmitting ? "Submitting..." : "Submit Your Result"}
         </button>

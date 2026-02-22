@@ -6,6 +6,7 @@ export type GeographicClassification = "rural" | "suburban" | "urban";
 export type ScholarshipType = "none" | "merit" | "need_based" | "both";
 export type AttendanceIntent = "yes" | "no" | "undecided";
 export type WaitlistOutcome = "accepted_off_waitlist" | "rejected_off_waitlist" | "withdrew";
+export type DataSource = "user" | "reddit" | "college_confidential" | "public_scraped";
 
 export interface UserProfile {
   id: string;
@@ -31,8 +32,11 @@ export interface School {
 
 export interface AdmissionSubmission {
   id: string;
-  userId: string;
+  userId: string | null;
   schoolId: string;
+  dataSource: DataSource;
+  sourceUrl: string | null;
+  sourcePostId: string | null;
   admissionCycle: string;
   decision: AdmissionDecision;
   gpaUnweighted: number | null;
@@ -42,13 +46,15 @@ export interface AdmissionSubmission {
   extracurriculars: string[];
   intendedMajor: string | null;
   applicationRound: "early_decision" | "early_action" | "regular" | "rolling";
-  stateOfResidence: string;
+  stateOfResidence: string | null;
   highSchoolType: HighSchoolType | null;
   firstGeneration: boolean | null;
   legacyStatus: boolean | null;
   financialAidApplied: boolean | null;
   geographicClassification: GeographicClassification | null;
   apCoursesCount: number | null;
+  ibCoursesCount: number | null;
+  honorsCoursesCount: number | null;
   scholarshipOffered: ScholarshipType | null;
   willAttend: AttendanceIntent | null;
   waitlistOutcome: WaitlistOutcome | null;

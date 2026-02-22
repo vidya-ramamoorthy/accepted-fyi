@@ -10,6 +10,7 @@ describe("US_COLLEGES data", () => {
     for (const college of US_COLLEGES) {
       expect(college.name).toBeTruthy();
       expect(college.state).toMatch(/^[A-Z]{2}$/);
+      expect(college.city).toBeTruthy();
     }
   });
 
@@ -108,8 +109,9 @@ describe("filterColleges", () => {
     expect(results.length).toBeLessThanOrEqual(10);
   });
 
-  it("should include state information in results", () => {
+  it("should include state and city information in results", () => {
     const results = filterColleges("Stanford");
     expect(results[0].state).toBe("CA");
+    expect(results[0].city).toBe("Stanford");
   });
 });
