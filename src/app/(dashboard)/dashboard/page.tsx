@@ -3,6 +3,7 @@ import { findOrCreateUser } from "@/lib/db/queries/users";
 import { getSubmissionsByUser } from "@/lib/db/queries/submissions";
 import { extractUserProfileData } from "@/lib/utils/auth-helpers";
 import SubmissionCard from "@/components/submissions/SubmissionCard";
+import ShareCardButton from "@/components/cards/ShareCardButton";
 import Link from "next/link";
 
 export default async function DashboardPage() {
@@ -54,35 +55,43 @@ export default async function DashboardPage() {
       ) : (
         <div className="mt-6 space-y-4">
           {submissions.map((submission) => (
-            <SubmissionCard
-              key={submission.id}
-              schoolName={submission.schoolName}
-              schoolState={submission.schoolState}
-              decision={submission.decision}
-              applicationRound={submission.applicationRound}
-              admissionCycle={submission.admissionCycle}
-              gpaUnweighted={submission.gpaUnweighted}
-              gpaWeighted={submission.gpaWeighted}
-              satScore={submission.satScore}
-              actScore={submission.actScore}
-              intendedMajor={submission.intendedMajor}
-              stateOfResidence={submission.stateOfResidence}
-              verificationTier={submission.verificationTier}
-              dataSource={submission.dataSource}
-              extracurriculars={submission.extracurriculars}
-              createdAt={submission.createdAt}
-              highSchoolType={submission.highSchoolType}
-              firstGeneration={submission.firstGeneration}
-              legacyStatus={submission.legacyStatus}
-              financialAidApplied={submission.financialAidApplied}
-              geographicClassification={submission.geographicClassification}
-              apCoursesCount={submission.apCoursesCount}
-              ibCoursesCount={submission.ibCoursesCount}
-              honorsCoursesCount={submission.honorsCoursesCount}
-              scholarshipOffered={submission.scholarshipOffered}
-              willAttend={submission.willAttend}
-              waitlistOutcome={submission.waitlistOutcome}
-            />
+            <div key={submission.id} className="space-y-2">
+              <SubmissionCard
+                id={submission.id}
+                schoolName={submission.schoolName}
+                schoolState={submission.schoolState}
+                decision={submission.decision}
+                applicationRound={submission.applicationRound}
+                admissionCycle={submission.admissionCycle}
+                gpaUnweighted={submission.gpaUnweighted}
+                gpaWeighted={submission.gpaWeighted}
+                satScore={submission.satScore}
+                actScore={submission.actScore}
+                intendedMajor={submission.intendedMajor}
+                stateOfResidence={submission.stateOfResidence}
+                verificationTier={submission.verificationTier}
+                dataSource={submission.dataSource}
+                extracurriculars={submission.extracurriculars}
+                createdAt={submission.createdAt}
+                highSchoolType={submission.highSchoolType}
+                firstGeneration={submission.firstGeneration}
+                legacyStatus={submission.legacyStatus}
+                financialAidApplied={submission.financialAidApplied}
+                geographicClassification={submission.geographicClassification}
+                apCoursesCount={submission.apCoursesCount}
+                ibCoursesCount={submission.ibCoursesCount}
+                honorsCoursesCount={submission.honorsCoursesCount}
+                scholarshipOffered={submission.scholarshipOffered}
+                willAttend={submission.willAttend}
+                waitlistOutcome={submission.waitlistOutcome}
+              />
+              <div className="flex justify-end">
+                <ShareCardButton
+                  submissionId={submission.id}
+                  schoolName={submission.schoolName}
+                />
+              </div>
+            </div>
           ))}
         </div>
       )}

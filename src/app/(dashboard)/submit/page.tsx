@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import SchoolAutocomplete from "@/components/SchoolAutocomplete";
+import ShareCardButton from "@/components/cards/ShareCardButton";
 import type { AdmissionDecision } from "@/types/database";
 
 const APPLICATION_ROUNDS = [
@@ -65,7 +66,6 @@ const inputClassName =
   "mt-1 w-full rounded-md border border-slate-700 bg-slate-800/50 px-3 py-3 text-sm text-slate-200 placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500";
 
 export default function SubmitPage() {
-  const router = useRouter();
   const [formLoadedAt] = useState(() => Date.now());
   const [honeypotValue, setHoneypotValue] = useState("");
   const [schoolName, setSchoolName] = useState("");
@@ -94,10 +94,8 @@ export default function SubmitPage() {
   const [waitlistOutcome, setWaitlistOutcome] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [submittedSubmissionId, setSubmittedSubmissionId] = useState<string | null>(null);
   const [showOptionalFields, setShowOptionalFields] = useState(false);
-
-  const REDIRECT_DELAY_MS = 1500;
 
   const showWaitlistOutcome = decision === "waitlisted";
 
@@ -105,7 +103,6 @@ export default function SubmitPage() {
     event.preventDefault();
     setIsSubmitting(true);
     setErrorMessage("");
-    setSuccessMessage("");
 
     try {
       const response = await fetch("/api/submissions", {
@@ -153,17 +150,23 @@ export default function SubmitPage() {
         return;
       }
 
-      setSuccessMessage("Your result has been submitted! Redirecting to browse...");
-      setTimeout(() => {
-        router.push("/browse");
-        router.refresh();
-      }, REDIRECT_DELAY_MS);
+      const responseData = await response.json();
+      setSubmittedSubmissionId(responseData.submission?.id ?? null);
     } catch {
       setErrorMessage("Network error. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (submittedSubmissionId) {
+    return (
+      <PostSubmissionSharePrompt
+        submissionId={submittedSubmissionId}
+        schoolName={schoolName}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -177,12 +180,6 @@ export default function SubmitPage() {
       {errorMessage && (
         <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
           {errorMessage}
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400">
-          {successMessage}
         </div>
       )}
 
@@ -659,6 +656,58 @@ export default function SubmitPage() {
           {isSubmitting ? "Submitting..." : "Submit Your Result"}
         </button>
       </form>
+    </div>
+  );
+}
+
+function PostSubmissionSharePrompt({
+  submissionId,
+  schoolName,
+}: {
+  submissionId: string;
+  schoolName: string;
+}) {
+  const cardImageUrl = `/api/og/card/${submissionId}`;
+
+  return (
+    <div className="mx-auto max-w-2xl text-center">
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-6 py-4">
+        <p className="font-semibold text-emerald-400">
+          Your result has been submitted!
+        </p>
+      </div>
+
+      <h2 className="mt-8 text-2xl font-bold text-white">
+        Share Your Result
+      </h2>
+      <p className="mt-2 text-slate-400">
+        Download your decision card to share on Instagram, TikTok, or Twitter.
+      </p>
+
+      {/* Card preview */}
+      <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-violet-500/10">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={cardImageUrl}
+          alt={`Decision card for ${schoolName}`}
+          width={1200}
+          height={630}
+          className="w-full"
+        />
+      </div>
+
+      {/* Share actions */}
+      <div className="mt-6 flex items-center justify-center">
+        <ShareCardButton submissionId={submissionId} schoolName={schoolName} />
+      </div>
+
+      {/* Continue link */}
+      <Link
+        href="/browse"
+        className="mt-8 inline-block text-sm text-slate-400 underline underline-offset-4 transition-colors hover:text-white"
+      >
+        Continue to Browse
+      </Link>
     </div>
   );
 }
