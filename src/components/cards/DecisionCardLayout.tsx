@@ -1,4 +1,4 @@
-import { getDecisionCardColors, getCardRoundLabel } from "@/lib/cards/card-utils";
+import { getDecisionCardColors } from "@/lib/cards/card-utils";
 
 export interface DecisionCardData {
   schoolName: string;
@@ -40,12 +40,12 @@ function getLocationString(city: string | null, state: string): string {
  * Pure presentational card layout for Satori image generation.
  * Uses ONLY inline styles — Satori does not support Tailwind or CSS classes.
  *
- * Privacy: Cards intentionally exclude GPA, SAT, and ACT scores.
- * Shows: school logo, name, location, decision, major, round, cycle, watermark.
+ * Design philosophy: celebrate the student's achievement. The card is about
+ * THEM, not about us. Branding is a subtle watermark at the bottom.
+ * No GPA/SAT/ACT (privacy). No ED/EA/RD round labels (unnecessary clutter).
  */
 export default function DecisionCardLayout({ data, variant }: DecisionCardLayoutProps) {
   const colors = getDecisionCardColors(data.decision);
-  const roundLabel = getCardRoundLabel(data.applicationRound);
   const logoUrl = getSchoolLogoUrl(data.schoolWebsite);
   const location = getLocationString(data.schoolCity, data.schoolState);
 
@@ -54,7 +54,6 @@ export default function DecisionCardLayout({ data, variant }: DecisionCardLayout
       <StoryCard
         data={data}
         colors={colors}
-        roundLabel={roundLabel}
         logoUrl={logoUrl}
         location={location}
       />
@@ -65,7 +64,6 @@ export default function DecisionCardLayout({ data, variant }: DecisionCardLayout
     <OgCard
       data={data}
       colors={colors}
-      roundLabel={roundLabel}
       logoUrl={logoUrl}
       location={location}
     />
@@ -77,14 +75,13 @@ export default function DecisionCardLayout({ data, variant }: DecisionCardLayout
 interface CardVariantProps {
   data: DecisionCardData;
   colors: { accent: string; badge: string; badgeText: string; label: string };
-  roundLabel: string;
   logoUrl: string | null;
   location: string;
 }
 
 // --- OG Card (1200x630) ---
 
-function OgCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProps) {
+function OgCard({ data, colors, logoUrl, location }: CardVariantProps) {
   return (
     <div
       style={{
@@ -116,15 +113,15 @@ function OgCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProp
         }}
       >
         {/* School header: logo + name + location */}
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoUrl}
               alt=""
-              width={56}
-              height={56}
-              style={{ borderRadius: 12, backgroundColor: "#1e293b" }}
+              width={80}
+              height={80}
+              style={{ borderRadius: 16, backgroundColor: "#1e293b" }}
             />
           ) : (
             <div
@@ -132,11 +129,11 @@ function OgCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProp
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 56,
-                height: 56,
-                borderRadius: 12,
+                width: 80,
+                height: 80,
+                borderRadius: 16,
                 backgroundColor: "#1e293b",
-                fontSize: 28,
+                fontSize: 40,
                 fontWeight: 700,
                 color: "#a78bfa",
               }}
@@ -161,7 +158,7 @@ function OgCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProp
                 display: "flex",
                 fontSize: 20,
                 color: "#94a3b8",
-                marginTop: 6,
+                marginTop: 8,
               }}
             >
               {location}
@@ -196,7 +193,7 @@ function OgCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProp
           </div>
         </div>
 
-        {/* Major + Round + Cycle */}
+        {/* Major + Cycle */}
         <div
           style={{
             display: "flex",
@@ -214,18 +211,7 @@ function OgCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProp
                 color: "#cbd5e1",
               }}
             >
-              {data.intendedMajor} · {roundLabel}
-            </div>
-          )}
-          {!data.intendedMajor && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 22,
-                color: "#cbd5e1",
-              }}
-            >
-              {roundLabel}
+              {data.intendedMajor}
             </div>
           )}
           <div
@@ -240,22 +226,18 @@ function OgCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProp
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer — subtle watermark, not the focus */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           padding: "0 56px",
-          height: 64,
-          borderTop: "1px solid rgba(148, 163, 184, 0.15)",
+          height: 52,
         }}
       >
-        <div style={{ display: "flex", fontSize: 20, fontWeight: 700, color: "#a78bfa" }}>
+        <div style={{ display: "flex", fontSize: 15, color: "#475569" }}>
           accepted.fyi
-        </div>
-        <div style={{ display: "flex", fontSize: 16, color: "#64748b" }}>
-          Share your results
         </div>
       </div>
     </div>
@@ -264,7 +246,7 @@ function OgCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProp
 
 // --- Story Card (1080x1920) ---
 
-function StoryCard({ data, colors, roundLabel, logoUrl, location }: CardVariantProps) {
+function StoryCard({ data, colors, logoUrl, location }: CardVariantProps) {
   return (
     <div
       style={{
@@ -286,37 +268,23 @@ function StoryCard({ data, colors, roundLabel, logoUrl, location }: CardVariantP
         }}
       />
 
-      {/* Main content */}
+      {/* Main content — centered, all about the student */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           flex: 1,
-          padding: "80px 64px 0 64px",
+          padding: "120px 64px 0 64px",
           alignItems: "center",
           textAlign: "center" as const,
         }}
       >
-        {/* Brand */}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 24,
-            fontWeight: 700,
-            color: "#a78bfa",
-            letterSpacing: "0.05em",
-          }}
-        >
-          accepted.fyi
-        </div>
-
-        {/* School logo */}
+        {/* School logo — big and prominent */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            marginTop: 64,
           }}
         >
           {logoUrl ? (
@@ -324,9 +292,9 @@ function StoryCard({ data, colors, roundLabel, logoUrl, location }: CardVariantP
             <img
               src={logoUrl}
               alt=""
-              width={80}
-              height={80}
-              style={{ borderRadius: 20, backgroundColor: "#1e293b" }}
+              width={120}
+              height={120}
+              style={{ borderRadius: 28, backgroundColor: "#1e293b" }}
             />
           ) : (
             <div
@@ -334,11 +302,11 @@ function StoryCard({ data, colors, roundLabel, logoUrl, location }: CardVariantP
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 80,
-                height: 80,
-                borderRadius: 20,
+                width: 120,
+                height: 120,
+                borderRadius: 28,
                 backgroundColor: "#1e293b",
-                fontSize: 40,
+                fontSize: 60,
                 fontWeight: 700,
                 color: "#a78bfa",
               }}
@@ -354,7 +322,7 @@ function StoryCard({ data, colors, roundLabel, logoUrl, location }: CardVariantP
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            marginTop: 32,
+            marginTop: 40,
           }}
         >
           <div
@@ -400,17 +368,19 @@ function StoryCard({ data, colors, roundLabel, logoUrl, location }: CardVariantP
           {colors.label.toUpperCase()}
         </div>
 
-        {/* Major + Round */}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 24,
-            color: "#cbd5e1",
-            marginTop: 40,
-          }}
-        >
-          {data.intendedMajor ? `${data.intendedMajor} · ${roundLabel}` : roundLabel}
-        </div>
+        {/* Major */}
+        {data.intendedMajor && (
+          <div
+            style={{
+              display: "flex",
+              fontSize: 24,
+              color: "#cbd5e1",
+              marginTop: 40,
+            }}
+          >
+            {data.intendedMajor}
+          </div>
+        )}
 
         {/* Cycle */}
         <div
@@ -425,25 +395,16 @@ function StoryCard({ data, colors, roundLabel, logoUrl, location }: CardVariantP
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer — subtle watermark */}
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
-          padding: "0 64px 80px 64px",
-          gap: 12,
+          justifyContent: "center",
+          padding: "0 64px 60px 64px",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            width: "100%",
-            height: 1,
-            backgroundColor: "rgba(148, 163, 184, 0.15)",
-          }}
-        />
-        <div style={{ display: "flex", fontSize: 22, fontWeight: 700, color: "#a78bfa", marginTop: 20 }}>
+        <div style={{ display: "flex", fontSize: 18, color: "#475569" }}>
           accepted.fyi
         </div>
       </div>
