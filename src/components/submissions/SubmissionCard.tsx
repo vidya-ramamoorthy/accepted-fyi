@@ -1,3 +1,5 @@
+import FlagButton from "./FlagButton";
+
 const DECISION_STYLES: Record<string, { background: string; text: string; label: string }> = {
   accepted: { background: "bg-emerald-500/10", text: "text-emerald-400", label: "Accepted" },
   rejected: { background: "bg-red-500/10", text: "text-red-400", label: "Rejected" },
@@ -48,6 +50,7 @@ const DATA_SOURCE_STYLES: Record<string, { label: string; color: string }> = {
 };
 
 interface SubmissionCardProps {
+  id: string;
   schoolName: string;
   schoolState: string;
   decision: string;
@@ -74,9 +77,11 @@ interface SubmissionCardProps {
   scholarshipOffered: string | null;
   willAttend: string | null;
   waitlistOutcome: string | null;
+  showFlagButton?: boolean;
 }
 
 export default function SubmissionCard({
+  id,
   schoolName,
   schoolState,
   decision,
@@ -101,6 +106,7 @@ export default function SubmissionCard({
   scholarshipOffered,
   willAttend,
   waitlistOutcome,
+  showFlagButton,
 }: SubmissionCardProps) {
   const decisionStyle = DECISION_STYLES[decision] ?? DECISION_STYLES.accepted;
   const verification = VERIFICATION_LABELS[verificationTier] ?? VERIFICATION_LABELS.bronze;
@@ -223,7 +229,12 @@ export default function SubmissionCard({
             </>
           )}
         </div>
-        {stateOfResidence && <span>From {stateOfResidence}</span>}
+        <div className="flex items-center gap-2">
+          {stateOfResidence && <span>From {stateOfResidence}</span>}
+          {showFlagButton && (
+            <FlagButton submissionId={id} />
+          )}
+        </div>
       </div>
     </div>
   );

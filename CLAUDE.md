@@ -15,7 +15,7 @@
 | Framework | Next.js 16 (App Router, TypeScript) | $0 (open source) |
 | Hosting | Vercel Hobby tier | $0/month |
 | Database | Supabase Postgres | $0/month (500 MB storage) |
-| Auth | Supabase Auth (Google + Apple sign-in) | $0/month (50,000 MAUs free) |
+| Auth | Supabase Auth (Google sign-in) | $0/month (50,000 MAUs free) |
 | File Storage | Supabase Storage | $0/month (1 GB free) |
 | ORM | Drizzle ORM | $0 (open source) |
 | Cache / Rate Limiting | Upstash Redis | $0/month (10K commands/day free) |
@@ -42,14 +42,13 @@
 - **Upstash Redis:** 10K commands/day → need Pro ($10/mo)
 
 ### Annual / One-Time Costs
-- Apple Developer Account: **$99/year** (required for Apple Sign-In)
 - Domain (accepted.fyi): **~$15-20/year**
-- Total year 1 fixed costs: **~$115-120**
+- Total year 1 fixed costs: **~$15-20**
 
 ## Architecture Decisions
 
 ### Authentication
-- Supabase Auth handles Google + Apple OAuth
+- Supabase Auth handles Google OAuth
 - Chosen over Clerk (expensive at scale: $0.02/MAU after 10K) and Auth.js (more setup work)
 - Supabase Auth gives 50,000 MAUs free vs Clerk's 10,000
 
@@ -161,10 +160,9 @@
 5. **Seed 50-100 crowdsourced submissions** — either from beta testers or parsed Reddit data, so browse/chances pages aren't empty
 
 ### Should Complete Before Launch
-6. **Apple Sign-In** — ~50% of student audience is on iPhone, Google-only login loses conversions
-7. **Reddit data ingestion pipeline** — parse r/ApplyingToCollege decision megathreads to seed crowdsourced data at scale
-8. **Open Graph / social meta tags** — ensure shared links show a compelling preview card on all platforms
-9. **Mobile responsiveness audit** — students will access primarily from phones via TikTok/Instagram links
+6. **Reddit data ingestion pipeline** — parse r/ApplyingToCollege decision megathreads to seed crowdsourced data at scale
+7. **Open Graph / social meta tags** — ensure shared links show a compelling preview card on all platforms
+8. **Mobile responsiveness audit** — students will access primarily from phones via TikTok/Instagram links
 
 ### Can Launch Without (Build After)
 10. .edu email verification (Silver tier)

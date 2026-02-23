@@ -358,6 +358,7 @@ export default async function SchoolDetailPage({ params, searchParams }: SchoolD
                 {submissions.map((submission) => (
                   <SubmissionCard
                     key={submission.id}
+                    id={submission.id}
                     schoolName={school.name}
                     schoolState={school.state}
                     decision={submission.decision}
@@ -384,6 +385,7 @@ export default async function SchoolDetailPage({ params, searchParams }: SchoolD
                     scholarshipOffered={submission.scholarshipOffered}
                     willAttend={submission.willAttend}
                     waitlistOutcome={submission.waitlistOutcome}
+                    showFlagButton
                   />
                 ))}
               </div>

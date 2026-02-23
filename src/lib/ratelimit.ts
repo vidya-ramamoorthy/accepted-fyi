@@ -56,6 +56,19 @@ export const ipSubmissionRateLimiter = redis
   : null;
 
 /**
+ * Rate limiter for submission flagging.
+ * Allows 10 flags per hour per user (sliding window).
+ * Prevents flag-spamming while allowing legitimate flagging activity.
+ */
+export const flagRateLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, "1 h"),
+      prefix: "ratelimit:flags",
+    })
+  : null;
+
+/**
  * IP-based rate limiter for read requests.
  * 50/minute per IP — prevents scraping from a single IP.
  */

@@ -37,6 +37,7 @@ function visibleSubmissionCondition() {
 
 const submissionWithSchoolFields = {
   id: admissionSubmissions.id,
+  userId: admissionSubmissions.userId,
   dataSource: admissionSubmissions.dataSource,
   decision: admissionSubmissions.decision,
   applicationRound: admissionSubmissions.applicationRound,
@@ -261,6 +262,7 @@ async function fetchSubmissionsForSchool(schoolId: string, page: number = 1) {
   return db
     .select({
       id: admissionSubmissions.id,
+      userId: admissionSubmissions.userId,
       dataSource: admissionSubmissions.dataSource,
       decision: admissionSubmissions.decision,
       applicationRound: admissionSubmissions.applicationRound,
@@ -303,4 +305,42 @@ export const getSubmissionsForSchool = (schoolId: string, page: number = 1) =>
     () => fetchSubmissionsForSchool(schoolId, page),
     [`school-submissions-${schoolId}-page-${page}`],
     { revalidate: 1800, tags: [`school-submissions-${schoolId}`] }
+  )();
+
+const cardSubmissionFields = {
+  id: admissionSubmissions.id,
+  decision: admissionSubmissions.decision,
+  applicationRound: admissionSubmissions.applicationRound,
+  admissionCycle: admissionSubmissions.admissionCycle,
+  intendedMajor: admissionSubmissions.intendedMajor,
+  verificationTier: admissionSubmissions.verificationTier,
+  schoolName: schools.name,
+  schoolState: schools.state,
+  schoolCity: schools.city,
+  schoolWebsite: schools.website,
+} as const;
+
+async function fetchVisibleSubmissionById(submissionId: string) {
+  const db = getDb();
+
+  const [submission] = await db
+    .select(cardSubmissionFields)
+    .from(admissionSubmissions)
+    .innerJoin(schools, eq(admissionSubmissions.schoolId, schools.id))
+    .where(
+      and(
+        eq(admissionSubmissions.id, submissionId),
+        visibleSubmissionCondition()
+      )
+    )
+    .limit(1);
+
+  return submission ?? null;
+}
+
+export const getVisibleSubmissionById = (submissionId: string) =>
+  unstable_cache(
+    () => fetchVisibleSubmissionById(submissionId),
+    [`submission-card-${submissionId}`],
+    { revalidate: 1800, tags: [`submission-card-${submissionId}`] }
   )();

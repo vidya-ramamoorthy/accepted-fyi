@@ -136,6 +136,7 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
             .map((submission) => (
               <SubmissionCard
                 key={submission.id}
+                id={submission.id}
                 schoolName={submission.schoolName}
                 schoolState={submission.schoolState}
                 decision={submission.decision}
@@ -162,6 +163,7 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
                 scholarshipOffered={submission.scholarshipOffered}
                 willAttend={submission.willAttend}
                 waitlistOutcome={submission.waitlistOutcome}
+                showFlagButton={submission.userId !== userProfile.id}
               />
             ))}
           {!hasSubmitted && totalCount > PREVIEW_CARD_COUNT && (
