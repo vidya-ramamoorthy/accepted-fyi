@@ -124,6 +124,7 @@ export const POST = createApiHandler(
       }
 
       revalidateTag(`school-submissions-${school.id}`, { expire: 0 });
+      revalidateTag("chances-profiles", { expire: 0 });
 
       return NextResponse.json({ submission }, { status: 201 });
     } catch (error) {

@@ -48,6 +48,12 @@ export default async function DashboardLayout({
               >
                 Schools
               </Link>
+              <Link
+                href="/chances"
+                className="text-sm text-slate-400 transition-colors hover:text-white"
+              >
+                Chances
+              </Link>
             </div>
             {/* Always visible — Submit CTA + sign out */}
             <Link
@@ -69,6 +75,9 @@ export default async function DashboardLayout({
           </Link>
           <Link href="/schools" className="text-xs text-slate-400 hover:text-white">
             Schools
+          </Link>
+          <Link href="/chances" className="text-xs text-slate-400 hover:text-white">
+            Chances
           </Link>
         </div>
       </nav>

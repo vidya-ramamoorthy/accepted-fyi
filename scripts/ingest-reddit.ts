@@ -1,18 +1,20 @@
 /**
  * Reddit r/collegeresults Data Ingestion Script
  *
- * Fetches posts from r/collegeresults using Reddit's public JSON API
- * and parses the standardized template into structured admission outcomes.
+ * Fetches posts from r/collegeresults using the Arctic Shift API
+ * (https://arctic-shift.photon-reddit.com) which provides full historical
+ * access to Reddit data (14,000+ posts vs Reddit API's 1,000 cap).
  *
  * Usage:
- *   npx tsx scripts/ingest-reddit.ts
- *   npx tsx scripts/ingest-reddit.ts --limit 50
- *   npx tsx scripts/ingest-reddit.ts --after t3_abc123
+ *   npx tsx scripts/ingest-reddit.ts                    # Fetch all posts from 2018+
+ *   npx tsx scripts/ingest-reddit.ts --limit 500        # Limit to 500 posts
+ *   npx tsx scripts/ingest-reddit.ts --after 2024-01-01 # Start from a specific date
  *
  * Prerequisites:
  *   - Set DATABASE_URL in .env.local
  *
  * Data source: https://www.reddit.com/r/collegeresults
+ * Archive: https://arctic-shift.photon-reddit.com
  * Template: https://www.reddit.com/r/collegeresults/comments/gketws/template_1_standard_template/
  *
  * Posts follow a standardized template with sections:
@@ -41,9 +43,9 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const REDDIT_BASE_URL = "https://www.reddit.com/r/collegeresults";
-const USER_AGENT = "accepted-fyi-ingestion/1.0 (educational research)";
-const REQUEST_DELAY_MS = 2000; // 2 seconds between requests (respect rate limits)
+const ARCTIC_SHIFT_BASE_URL = "https://arctic-shift.photon-reddit.com/api/posts/search";
+const SUBREDDIT = "collegeresults";
+const REQUEST_DELAY_MS = 500; // 500ms between requests (Arctic Shift is more lenient)
 const POSTS_PER_PAGE = 100;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -311,11 +313,22 @@ function extractSchoolFromLine(line: string): { schoolName: string; applicationR
     .replace(/\([^)]*\)/g, "")      // remove parenthetical notes
     .replace(/\[[^\]]*\]/g, "")      // remove bracketed notes like [waitlisted]
     .replace(/[*_~`#>!]/g, "")       // remove markdown formatting + spoiler chars
+    .replace(/\s*[-–—]+\s*(?:pending|deferred|rejected|accepted|waitlisted|denied|committed|withdrew|withdrawn|declined).*$/i, "") // remove "– pending", "– deferred", etc.
     .replace(/\s*[-–—]\s*$/, "")     // remove trailing dashes
     .replace(/^\d+\.\s*/, "")        // remove leading numbers like "1. "
     .replace(/,\s*$/, "")            // remove trailing commas
     .replace(/\s*:+\s*$/, "")        // remove trailing colons
     .replace(/\s*with\s+\$[\d,.]+[kK]?\s*.*/i, "") // remove "with $152k merit" suffixes
+    .replace(/\s*<--.*$/i, "")       // remove "<-- accepted spot on waitlist" suffixes
+    .replace(/\s*-->.*$/i, "")       // remove "--> committed" suffixes
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">") // decode HTML entities first
+    .replace(/\s*<--.*$/i, "")       // re-run after HTML decode
+    .replace(/\s*-->.*$/i, "")
+    .replace(/\s+w\s+honors?\b.*$/i, "")  // remove "w honors" suffix
+    .replace(/\s*\+\s*\$?[\d,.]+[kK]?\s*(?:schol|scholarship|pres).*$/i, "") // remove "+40k schol" suffixes
+    .replace(/\s+lessgo\b.*$/i, "")  // remove celebratory suffixes
+    .replace(/\s+ed[12]\b/i, "")     // remove "ED1", "ED2" suffixes
+    .replace(/\s*:\s*(?:accepted|rejected|deferred|waitlisted|denied)\s*$/i, "") // remove ": accepted" suffixes
     .trim();
 
   // Clean HTML entities and zero-width spaces
@@ -552,34 +565,46 @@ function parsePost(post: RedditPost): ParsedPost | null {
   };
 }
 
-// ─── Reddit API ──────────────────────────────────────────────────────────────
+// ─── Arctic Shift API ─────────────────────────────────────────────────────────
+// Uses Arctic Shift (https://arctic-shift.photon-reddit.com) for full historical
+// access to r/collegeresults. Unlike Reddit's API which caps at ~1,000 posts,
+// Arctic Shift has the complete archive (14,000+ posts).
 
-async function fetchRedditPage(after: string | null, sort: string = "new", timeRange: string = "year"): Promise<{
+async function fetchArcticShiftPage(afterDate: string | null): Promise<{
   posts: RedditPost[];
-  after: string | null;
+  nextAfterDate: string | null;
 }> {
-  const url = new URL(`${REDDIT_BASE_URL}/${sort}.json`);
+  const url = new URL(ARCTIC_SHIFT_BASE_URL);
+  url.searchParams.set("subreddit", SUBREDDIT);
   url.searchParams.set("limit", POSTS_PER_PAGE.toString());
-  if (sort === "top") url.searchParams.set("t", timeRange);
-  if (after) url.searchParams.set("after", after);
+  url.searchParams.set("sort", "asc");
+  if (afterDate) url.searchParams.set("after", afterDate);
 
-  const response = await fetch(url.toString(), {
-    headers: { "User-Agent": USER_AGENT },
-  });
+  const response = await fetch(url.toString());
 
   if (!response.ok) {
-    throw new Error(`Reddit API error (${response.status}): ${await response.text()}`);
+    throw new Error(`Arctic Shift API error (${response.status}): ${await response.text()}`);
   }
 
-  const data = await response.json();
-  const posts: RedditPost[] = data.data.children
-    .filter((child: { kind: string }) => child.kind === "t3")
-    .map((child: { data: RedditPost }) => child.data);
+  const json = await response.json();
+  const posts: RedditPost[] = (json.data || []).map((post: Record<string, unknown>) => ({
+    id: post.id as string,
+    title: post.title as string,
+    selftext: post.selftext as string,
+    link_flair_text: (post.link_flair_text as string) || null,
+    created_utc: post.created_utc as number,
+    permalink: post.permalink as string,
+    score: post.score as number,
+  }));
 
-  return {
-    posts,
-    after: data.data.after || null,
-  };
+  // Use the last post's created_utc as the pagination cursor
+  let nextAfterDate: string | null = null;
+  if (posts.length === POSTS_PER_PAGE) {
+    const lastPost = posts[posts.length - 1];
+    nextAfterDate = new Date(lastPost.created_utc * 1000).toISOString();
+  }
+
+  return { posts, nextAfterDate };
 }
 
 // ─── School Matching ─────────────────────────────────────────────────────────
@@ -820,6 +845,26 @@ async function findSchoolId(
     "university of california, merced": "University of California-Merced",
     "university of california, los angeles": "University of California-Los Angeles",
     "university of california, berkeley": "University of California-Berkeley",
+    "university of michigan": "University of Michigan-Ann Arbor",
+    "u of m": "University of Michigan-Ann Arbor",
+    "university of texas austin": "The University of Texas at Austin",
+    "university of texas at austin": "The University of Texas at Austin",
+    "penn state university park": "Pennsylvania State University-Main Campus",
+    "university of maryland college park": "University of Maryland-College Park",
+    "cu boulder": "University of Colorado Boulder",
+    "colorado boulder": "University of Colorado Boulder",
+    "u of minnesota": "University of Minnesota-Twin Cities",
+    "james madison": "James Madison University",
+    "james madison university": "James Madison University",
+    "towson": "Towson University",
+    "towson university": "Towson University",
+    "university of maine": "University of Maine",
+    "university of new hampshire": "University of New Hampshire-Main Campus",
+    "unh": "University of New Hampshire-Main Campus",
+    "university of rhode island": "University of Rhode Island",
+    "uri": "University of Rhode Island",
+    "west virginia university": "West Virginia University",
+    "wvu": "West Virginia University",
   };
 
   const mappedName = abbreviationMap[normalizedName];
@@ -871,10 +916,8 @@ async function getOrCreateSystemUser(db: ReturnType<typeof drizzle>): Promise<st
 
 async function main() {
   const args = process.argv.slice(2);
-  let maxPosts = 500; // Default: fetch 500 posts
-  let startAfter: string | null = null;
-  let sortBy = "top"; // Default: top posts (better parse rate)
-  let timeRange = "all"; // Default: all time
+  let maxPosts = 15000; // Default: fetch all ~14K posts
+  let startAfterDate: string | null = "2018-01-01"; // Default: start from 2018
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--limit" && args[i + 1]) {
@@ -882,15 +925,7 @@ async function main() {
       i++;
     }
     if (args[i] === "--after" && args[i + 1]) {
-      startAfter = args[i + 1];
-      i++;
-    }
-    if (args[i] === "--sort" && args[i + 1]) {
-      sortBy = args[i + 1];
-      i++;
-    }
-    if (args[i] === "--time" && args[i + 1]) {
-      timeRange = args[i + 1];
+      startAfterDate = args[i + 1];
       i++;
     }
   }
@@ -899,9 +934,8 @@ async function main() {
   const client = postgres(connectionString);
   const db = drizzle(client);
 
-  console.log("Starting Reddit r/collegeresults ingestion...");
-  console.log(`Max posts: ${maxPosts}, Sort: ${sortBy}, Time: ${timeRange}`);
-  if (startAfter) console.log(`Starting after: ${startAfter}`);
+  console.log("Starting Reddit r/collegeresults ingestion via Arctic Shift...");
+  console.log(`Max posts: ${maxPosts}, Starting after: ${startAfterDate}`);
   console.log();
 
   let totalFetched = 0;
@@ -909,22 +943,23 @@ async function main() {
   let totalInserted = 0;
   let totalSkippedNoSchool = 0;
   let totalSkippedDuplicate = 0;
-  let after = startAfter;
+  let afterDate: string | null = startAfterDate;
 
   const unmatchedSchoolNames = new Map<string, number>();
 
   while (totalFetched < maxPosts) {
-    process.stdout.write(`Fetching page (after=${after || "start"})... `);
+    process.stdout.write(`Fetching page (after=${afterDate || "start"})... `);
 
     try {
-      const page = await fetchRedditPage(after, sortBy, timeRange);
+      const page = await fetchArcticShiftPage(afterDate);
       if (page.posts.length === 0) {
         console.log("No more posts.");
         break;
       }
 
       totalFetched += page.posts.length;
-      console.log(`${page.posts.length} posts`);
+      const lastPostDate = new Date(page.posts[page.posts.length - 1].created_utc * 1000).toISOString().split("T")[0];
+      console.log(`${page.posts.length} posts (through ${lastPostDate})`);
 
       for (const post of page.posts) {
         const parsed = parsePost(post);
@@ -963,7 +998,7 @@ async function main() {
 
           try {
             await db.insert(admissionSubmissions).values({
-              userId: null, // No real user for scraped data; null avoids unique constraint conflicts
+              userId: null,
               schoolId,
               dataSource: "reddit",
               sourceUrl: `https://www.reddit.com${post.permalink}`,
@@ -994,7 +1029,6 @@ async function main() {
             });
             totalInserted++;
           } catch (insertError) {
-            // Skip unique constraint violations (duplicate user+school+cycle)
             const errorMessage = insertError instanceof Error ? insertError.message : String(insertError);
             if (!errorMessage.includes("unique")) {
               console.error(`  Insert error for ${decision.schoolName}: ${errorMessage}`);
@@ -1003,8 +1037,8 @@ async function main() {
         }
       }
 
-      after = page.after;
-      if (!after) {
+      afterDate = page.nextAfterDate;
+      if (!afterDate) {
         console.log("Reached end of subreddit.");
         break;
       }
@@ -1013,7 +1047,7 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
     } catch (fetchError) {
       console.error(`Error: ${fetchError instanceof Error ? fetchError.message : fetchError}`);
-      // Wait longer on error
+      // Wait longer on error, then retry
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
@@ -1026,18 +1060,18 @@ async function main() {
   console.log(`Skipped (duplicate): ${totalSkippedDuplicate}`);
 
   if (unmatchedSchoolNames.size > 0) {
-    console.log(`\nTop 20 unmatched school names (add to abbreviation map or schools table):`);
+    console.log(`\nTop 30 unmatched school names (add to abbreviation map or schools table):`);
     const sortedUnmatched = [...unmatchedSchoolNames.entries()]
       .sort(([, countA], [, countB]) => countB - countA)
-      .slice(0, 20);
+      .slice(0, 30);
     for (const [schoolName, count] of sortedUnmatched) {
       console.log(`  ${schoolName}: ${count} mentions`);
     }
   }
 
-  if (after) {
+  if (afterDate) {
     console.log(`\nTo continue from where we left off, run:`);
-    console.log(`  npx tsx scripts/ingest-reddit.ts --after ${after}`);
+    console.log(`  npx tsx scripts/ingest-reddit.ts --after ${afterDate}`);
   }
 
   await client.end();
