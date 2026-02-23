@@ -22,8 +22,6 @@ const DATA_SOURCE_OPTIONS = [
   { value: "", label: "All Sources" },
   { value: "user", label: "User Submitted" },
   { value: "reddit", label: "Reddit" },
-  { value: "college_confidential", label: "College Confidential" },
-  { value: "public_scraped", label: "Public Scraped" },
 ];
 
 const filterInputClassName =

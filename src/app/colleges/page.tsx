@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { US_STATES } from "@/lib/constants/us-states";
 import { SAT_RANGES, ACT_RANGES, ACCEPTANCE_RATE_RANGES } from "@/lib/constants/score-ranges";
+import NavbarAuthSection from "@/components/NavbarAuthSection";
 
 export const metadata: Metadata = {
   title: "Browse Colleges by State, SAT Score, ACT Score & Acceptance Rate | accepted.fyi",
@@ -24,17 +25,7 @@ export default function CollegesHubPage() {
           <Link href="/" className="text-xl font-bold text-white tracking-tight">
             accepted<span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">.fyi</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/schools" className="text-sm text-slate-400 transition-colors hover:text-white">
-              All Schools
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-900 transition-all hover:bg-slate-100"
-            >
-              Sign In
-            </Link>
-          </div>
+          <NavbarAuthSection />
         </div>
       </nav>
 
@@ -44,6 +35,41 @@ export default function CollegesHubPage() {
           Explore admissions data for US colleges and universities. Find schools that match your
           profile by state, test scores, or selectivity.
         </p>
+
+        {/* Featured */}
+        <section className="mt-12">
+          <h2 className="text-xl font-bold text-white">Featured</h2>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Link
+              href="/uc-schools"
+              className="group rounded-2xl border border-white/5 bg-slate-900/50 p-6 transition-all hover:border-violet-500/30 hover:bg-slate-900/80"
+            >
+              <h3 className="text-lg font-semibold text-white group-hover:text-violet-300 transition-colors">
+                UC System — All 9 Campuses
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                Compare admissions data across UCLA, Berkeley, San Diego, and all 9 UC campuses. Decision dates, acceptance rates, and community outcomes.
+              </p>
+              <p className="mt-3 text-xs font-medium text-violet-400 opacity-0 transition-opacity group-hover:opacity-100">
+                Explore UC schools &rarr;
+              </p>
+            </Link>
+            <Link
+              href="/mit"
+              className="group rounded-2xl border border-white/5 bg-slate-900/50 p-6 transition-all hover:border-violet-500/30 hover:bg-slate-900/80"
+            >
+              <h3 className="text-lg font-semibold text-white group-hover:text-violet-300 transition-colors">
+                MIT Admissions Data
+              </h3>
+              <p className="mt-2 text-sm text-slate-400">
+                Pi Day decisions, acceptance rates, SAT/ACT score ranges, and real community-reported outcomes for MIT.
+              </p>
+              <p className="mt-3 text-xs font-medium text-violet-400 opacity-0 transition-opacity group-hover:opacity-100">
+                View MIT data &rarr;
+              </p>
+            </Link>
+          </div>
+        </section>
 
         {/* Browse by State */}
         <section className="mt-12">

@@ -1,6 +1,7 @@
 import { getSchoolsWithStats } from "@/lib/db/queries/schools";
 import Link from "next/link";
 import type { Metadata } from "next";
+import NavbarAuthSection from "@/components/NavbarAuthSection";
 
 export const revalidate = 300;
 
@@ -60,14 +61,7 @@ export default async function SchoolsPage({ searchParams }: SchoolsPageProps) {
           <Link href="/" className="text-xl font-bold text-white tracking-tight">
             accepted<span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">.fyi</span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-900 transition-all hover:bg-slate-100"
-            >
-              Sign In
-            </Link>
-          </div>
+          <NavbarAuthSection />
         </div>
       </nav>
 

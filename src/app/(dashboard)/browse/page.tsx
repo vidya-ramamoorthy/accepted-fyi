@@ -8,7 +8,7 @@ import Link from "next/link";
 import type { AdmissionDecision, DataSource } from "@/types/database";
 
 const VALID_DECISIONS: AdmissionDecision[] = ["accepted", "rejected", "waitlisted", "deferred"];
-const VALID_DATA_SOURCES: DataSource[] = ["user", "reddit", "college_confidential", "public_scraped"];
+const VALID_DATA_SOURCES: DataSource[] = ["user", "reddit"];
 const PREVIEW_CARD_COUNT = 3;
 
 function isValidDecision(value: string): value is AdmissionDecision {
