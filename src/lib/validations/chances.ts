@@ -14,6 +14,7 @@ export interface ChancesInput {
   stateOfResidence?: string;
   intendedMajor?: string;
   apCoursesCount?: string;
+  admissionCycle?: string;
 }
 
 export interface ValidationError {
@@ -28,6 +29,7 @@ export interface ValidatedChancesInput {
   stateOfResidence: string;
   intendedMajor: string | null;
   apCoursesCount: number | null;
+  admissionCycle: string | null;
 }
 
 const MAX_INTENDED_MAJOR_LENGTH = 100;
@@ -91,6 +93,15 @@ export function validateChancesInput(
     });
   }
 
+  // Optional: admission cycle (YYYY-YYYY format)
+  const admissionCycle = input.admissionCycle?.trim() || null;
+  if (admissionCycle && !/^\d{4}-\d{4}$/.test(admissionCycle)) {
+    errors.push({
+      field: "admissionCycle",
+      message: "Admission cycle must be in YYYY-YYYY format (e.g., 2025-2026)",
+    });
+  }
+
   // Optional: AP courses count
   let apCoursesCount: number | null = null;
   if (input.apCoursesCount && input.apCoursesCount.trim() !== "") {
@@ -117,6 +128,7 @@ export function validateChancesInput(
       stateOfResidence,
       intendedMajor,
       apCoursesCount,
+      admissionCycle,
     },
   };
 }

@@ -9,7 +9,7 @@
  * Cache keys use rounded inputs (GPA to 0.1, SAT to nearest 20) to maximize hits.
  */
 
-import { sql, and, or, eq, lte, between } from "drizzle-orm";
+import { sql, and, or, eq, lte, between, ilike } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/db";
 import { schools, admissionSubmissions } from "@/lib/db/schema";
@@ -102,6 +102,8 @@ interface SimilarProfileInput {
   gpaUnweighted: number | null;
   satScore: number | null;
   actScore: number | null;
+  intendedMajor: string | null;
+  admissionCycle: string | null;
 }
 
 /**
@@ -118,7 +120,9 @@ function roundedCacheKey(input: SimilarProfileInput): string {
   const actKey = input.actScore !== null
     ? Math.round(input.actScore)
     : "null";
-  return `chances-similar-gpa:${gpaKey}-sat:${satKey}-act:${actKey}`;
+  const majorKey = input.intendedMajor ?? "null";
+  const cycleKey = input.admissionCycle ?? "null";
+  return `chances-similar-gpa:${gpaKey}-sat:${satKey}-act:${actKey}-major:${majorKey}-cycle:${cycleKey}`;
 }
 
 async function fetchSimilarProfileStats(
@@ -152,6 +156,20 @@ async function fetchSimilarProfileStats(
     const actHigh = input.actScore + 3;
     conditions.push(
       between(admissionSubmissions.actScore, actLow, actHigh)
+    );
+  }
+
+  // Filter by intended major (fuzzy match)
+  if (input.intendedMajor !== null) {
+    conditions.push(
+      ilike(admissionSubmissions.intendedMajor, `%${input.intendedMajor}%`)
+    );
+  }
+
+  // Filter by admission cycle
+  if (input.admissionCycle !== null) {
+    conditions.push(
+      eq(admissionSubmissions.admissionCycle, input.admissionCycle)
     );
   }
 

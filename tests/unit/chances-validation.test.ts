@@ -251,6 +251,44 @@ describe("validateChancesInput", () => {
     expect(result.success).toBe(false);
   });
 
+  // ─── Admission Cycle Validation ─────────────────────────────────────────
+
+  it("should accept valid admission cycle format", () => {
+    const result = validateChancesInput({
+      gpaUnweighted: "3.8",
+      stateOfResidence: "CA",
+      admissionCycle: "2024-2025",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.admissionCycle).toBe("2024-2025");
+    }
+  });
+
+  it("should reject invalid admission cycle format", () => {
+    const result = validateChancesInput({
+      gpaUnweighted: "3.8",
+      stateOfResidence: "CA",
+      admissionCycle: "2024",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.some((e) => e.field === "admissionCycle")).toBe(true);
+    }
+  });
+
+  it("should treat empty admission cycle as null (all cycles)", () => {
+    const result = validateChancesInput({
+      gpaUnweighted: "3.8",
+      stateOfResidence: "CA",
+      admissionCycle: "",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.admissionCycle).toBeNull();
+    }
+  });
+
   // ─── Multiple Errors ──────────────────────────────────────────────────────
 
   it("should return multiple errors at once", () => {

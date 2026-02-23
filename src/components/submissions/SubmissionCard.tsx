@@ -195,9 +195,9 @@ export default function SubmissionCard({
 
       {extracurriculars.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {extracurriculars.slice(0, 5).map((ec) => (
+          {extracurriculars.slice(0, 5).map((ec, index) => (
             <span
-              key={ec}
+              key={index}
               className="inline-flex rounded-full bg-slate-800 px-2.5 py-0.5 text-xs text-slate-400"
             >
               {ec}

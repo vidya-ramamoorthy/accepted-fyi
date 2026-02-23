@@ -39,6 +39,15 @@ const CLASSIFICATION_CONFIG: Record<
   },
 };
 
+const ADMISSION_CYCLES = [
+  { value: "", label: "All cycles" },
+  { value: "2025-2026", label: "2025-2026" },
+  { value: "2024-2025", label: "2024-2025" },
+  { value: "2023-2024", label: "2023-2024" },
+  { value: "2022-2023", label: "2022-2023" },
+  { value: "2021-2022", label: "2021-2022" },
+];
+
 const CONFIDENCE_DOTS: Record<ConfidenceLevel, { color: string; label: string }> = {
   high: { color: "bg-emerald-400", label: "High confidence" },
   medium: { color: "bg-amber-400", label: "Medium confidence" },
@@ -52,6 +61,7 @@ export default function ChancesPage() {
   const [stateOfResidence, setStateOfResidence] = useState("");
   const [intendedMajor, setIntendedMajor] = useState("");
   const [apCoursesCount, setApCoursesCount] = useState("");
+  const [admissionCycle, setAdmissionCycle] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -69,6 +79,7 @@ export default function ChancesPage() {
     if (stateOfResidence) params.set("state", stateOfResidence);
     if (intendedMajor) params.set("major", intendedMajor);
     if (apCoursesCount) params.set("ap", apCoursesCount);
+    if (admissionCycle) params.set("cycle", admissionCycle);
 
     try {
       const response = await fetch(`/api/chances?${params.toString()}`);
@@ -191,7 +202,7 @@ export default function ChancesPage() {
               <div>
                 <label htmlFor="intendedMajor" className="block text-sm font-medium text-slate-300">
                   Intended Major
-                  <span className="ml-1 text-slate-500">(optional)</span>
+                  <span className="ml-1 text-slate-500">(filters similar students)</span>
                 </label>
                 <input
                   id="intendedMajor"
@@ -203,21 +214,41 @@ export default function ChancesPage() {
                 />
               </div>
 
-              <div>
-                <label htmlFor="apCoursesCount" className="block text-sm font-medium text-slate-300">
-                  AP/IB Courses
-                  <span className="ml-1 text-slate-500">(optional)</span>
-                </label>
-                <input
-                  id="apCoursesCount"
-                  type="number"
-                  min="0"
-                  max="30"
-                  value={apCoursesCount}
-                  onChange={(event) => setApCoursesCount(event.target.value)}
-                  placeholder="e.g., 8"
-                  className={inputClassName}
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="admissionCycle" className="block text-sm font-medium text-slate-300">
+                    Cycle Year
+                    <span className="ml-1 text-slate-500">(filter)</span>
+                  </label>
+                  <select
+                    id="admissionCycle"
+                    value={admissionCycle}
+                    onChange={(event) => setAdmissionCycle(event.target.value)}
+                    className={selectClassName}
+                  >
+                    {ADMISSION_CYCLES.map((cycle) => (
+                      <option key={cycle.value} value={cycle.value}>
+                        {cycle.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="apCoursesCount" className="block text-sm font-medium text-slate-300">
+                    AP/IB Courses
+                    <span className="ml-1 text-slate-500">(optional)</span>
+                  </label>
+                  <input
+                    id="apCoursesCount"
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={apCoursesCount}
+                    onChange={(event) => setApCoursesCount(event.target.value)}
+                    placeholder="e.g., 8"
+                    className={inputClassName}
+                  />
+                </div>
               </div>
 
               <button

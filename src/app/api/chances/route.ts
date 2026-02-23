@@ -28,6 +28,7 @@ export const GET = createApiHandler(
       stateOfResidence: searchParams.get("state") ?? undefined,
       intendedMajor: searchParams.get("major") ?? undefined,
       apCoursesCount: searchParams.get("ap") ?? undefined,
+      admissionCycle: searchParams.get("cycle") ?? undefined,
     });
 
     if (!validation.success) {
@@ -56,6 +57,8 @@ export const GET = createApiHandler(
           gpaUnweighted: data.gpaUnweighted,
           satScore: data.satScore,
           actScore: data.actScore,
+          intendedMajor: data.intendedMajor,
+          admissionCycle: data.admissionCycle,
         }),
       ]);
 
