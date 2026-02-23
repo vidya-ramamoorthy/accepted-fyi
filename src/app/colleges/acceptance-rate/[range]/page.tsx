@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -74,7 +75,9 @@ export default async function AcceptanceRatePage({ params }: AcceptanceRatePageP
           {matchingSchools.length} schools with acceptance rates between {range.min}% and {range.max}%
         </p>
 
-        <FilterableSchoolGrid schools={matchingSchools} hideFilter="acceptanceRate" />
+        <Suspense fallback={<div className="mt-6 text-sm text-slate-500">Loading filters...</div>}>
+          <FilterableSchoolGrid schools={matchingSchools} hideFilter="acceptanceRate" />
+        </Suspense>
 
         {/* Cross-links */}
         <section className="mt-16 border-t border-white/5 pt-8">

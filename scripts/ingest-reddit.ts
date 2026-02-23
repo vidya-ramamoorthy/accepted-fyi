@@ -9,6 +9,7 @@
  *   npx tsx scripts/ingest-reddit.ts                    # Fetch all posts from 2018+
  *   npx tsx scripts/ingest-reddit.ts --limit 500        # Limit to 500 posts
  *   npx tsx scripts/ingest-reddit.ts --after 2024-01-01 # Start from a specific date
+ *   npx tsx scripts/ingest-reddit.ts --dry-run           # Parse only, no DB inserts
  *
  * Prerequisites:
  *   - Set DATABASE_URL in .env.local
@@ -45,8 +46,20 @@ if (!DATABASE_URL) {
 
 const ARCTIC_SHIFT_BASE_URL = "https://arctic-shift.photon-reddit.com/api/posts/search";
 const SUBREDDIT = "collegeresults";
-const REQUEST_DELAY_MS = 500; // 500ms between requests (Arctic Shift is more lenient)
+const MINIMUM_REQUEST_DELAY_MS = 2000; // 2s minimum between normal requests
 const POSTS_PER_PAGE = 100;
+const BATCH_INSERT_SIZE = 50;
+
+// ─── Retry Configuration ──────────────────────────────────────────────────────
+
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 2000; // 2s base delay for exponential backoff
+const RETRY_MAX_JITTER_MS = 1000; // Random jitter between 0-1s
+
+// ─── Graceful Shutdown ────────────────────────────────────────────────────────
+
+let shutdownRequested = false;
+let currentAfterCursor: string | null = null;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -565,6 +578,50 @@ function parsePost(post: RedditPost): ParsedPost | null {
   };
 }
 
+// ─── Retry Helper ─────────────────────────────────────────────────────────────
+
+function calculateBackoffDelay(retryAttempt: number): number {
+  const exponentialDelay = RETRY_BASE_DELAY_MS * Math.pow(2, retryAttempt);
+  const jitter = Math.random() * RETRY_MAX_JITTER_MS;
+  return exponentialDelay + jitter;
+}
+
+async function fetchWithRetry(url: string): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(url);
+
+      if (response.status === 429) {
+        const retryAfterHeader = response.headers.get("Retry-After");
+        const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : NaN;
+        const waitMs = !isNaN(retryAfterSeconds)
+          ? retryAfterSeconds * 1000
+          : calculateBackoffDelay(attempt);
+        console.warn(`  Rate limited (429). Waiting ${Math.round(waitMs / 1000)}s before retry ${attempt + 1}/${MAX_RETRIES}...`);
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Arctic Shift API error (${response.status}): ${await response.text()}`);
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < MAX_RETRIES) {
+        const backoffDelay = calculateBackoffDelay(attempt);
+        console.warn(`  Request failed: ${lastError.message}. Retrying in ${Math.round(backoffDelay / 1000)}s (attempt ${attempt + 1}/${MAX_RETRIES})...`);
+        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+      }
+    }
+  }
+
+  throw lastError ?? new Error("fetchWithRetry: all retries exhausted");
+}
+
 // ─── Arctic Shift API ─────────────────────────────────────────────────────────
 // Uses Arctic Shift (https://arctic-shift.photon-reddit.com) for full historical
 // access to r/collegeresults. Unlike Reddit's API which caps at ~1,000 posts,
@@ -580,11 +637,7 @@ async function fetchArcticShiftPage(afterDate: string | null): Promise<{
   url.searchParams.set("sort", "asc");
   if (afterDate) url.searchParams.set("after", afterDate);
 
-  const response = await fetch(url.toString());
-
-  if (!response.ok) {
-    throw new Error(`Arctic Shift API error (${response.status}): ${await response.text()}`);
-  }
+  const response = await fetchWithRetry(url.toString());
 
   const json = await response.json();
   const posts: RedditPost[] = (json.data || []).map((post: Record<string, unknown>) => ({
@@ -654,9 +707,9 @@ async function findSchoolId(
     "penn": "University of Pennsylvania",
     "uchicago": "University of Chicago",
     "washu": "Washington University in St Louis",
-    "gatech": "Georgia Institute of Technology",
-    "georgia tech": "Georgia Institute of Technology",
-    "gt": "Georgia Institute of Technology",
+    "gatech": "Georgia Institute of Technology-Main Campus",
+    "georgia tech": "Georgia Institute of Technology-Main Campus",
+    "gt": "Georgia Institute of Technology-Main Campus",
     "uva": "University of Virginia-Main Campus",
     "umich": "University of Michigan-Ann Arbor",
     "umich lsa": "University of Michigan-Ann Arbor",
@@ -865,6 +918,80 @@ async function findSchoolId(
     "uri": "University of Rhode Island",
     "west virginia university": "West Virginia University",
     "wvu": "West Virginia University",
+    // Round 3: top unmatched from full Arctic Shift ingestion
+    "uw-madison": "University of Wisconsin-Madison",
+    "uw-seattle": "University of Washington-Seattle Campus",
+    "purdue university": "Purdue University-Main Campus",
+    "university of pittsburgh": "University of Pittsburgh-Pittsburgh Campus",
+    "upitt": "University of Pittsburgh-Pittsburgh Campus",
+    "urochester": "University of Rochester",
+    "university of rochester": "University of Rochester",
+    "rochester": "Rochester Institute of Technology",
+    "upenn wharton": "University of Pennsylvania",
+    "upenn seas": "University of Pennsylvania",
+    "njit": "New Jersey Institute of Technology",
+    "washington university in st. louis": "Washington University in St Louis",
+    "wash u": "Washington University in St Louis",
+    "wustl": "Washington University in St Louis",
+    "umich ross": "University of Michigan-Ann Arbor",
+    "uic": "University of Illinois Chicago",
+    "uflorida": "University of Florida",
+    "gtech": "Georgia Institute of Technology-Main Campus",
+    "university of alabama": "The University of Alabama",
+    "bama": "The University of Alabama",
+    "baylor": "Baylor University",
+    "baylor university": "Baylor University",
+    "tcnj": "The College of New Jersey",
+    "college of new jersey": "The College of New Jersey",
+    "georgetown sfs": "Georgetown University",
+    "georgetown mse": "Georgetown University",
+    "university of minnesota": "University of Minnesota-Twin Cities",
+    "umn": "University of Minnesota-Twin Cities",
+    "umn twin cities": "University of Minnesota-Twin Cities",
+    "nc state": "North Carolina State University at Raleigh",
+    "ncsu": "North Carolina State University at Raleigh",
+    "north carolina state": "North Carolina State University at Raleigh",
+    "suny bing": "Binghamton University",
+    "suny binghamton": "Binghamton University",
+    "suny buffalo": "University at Buffalo",
+    "suny stony brook": "Stony Brook University",
+    "arizona state university": "Arizona State University Campus Immersion",
+    "vandy": "Vanderbilt University",
+    "mcgill": "McGill University",
+    "george mason": "George Mason University",
+    "gmu": "George Mason University",
+    "usc marshall": "University of Southern California",
+    "usc viterbi": "University of Southern California",
+    "cmu scs": "Carnegie Mellon University",
+    "cmu ece": "Carnegie Mellon University",
+    "cornell dyson": "Cornell University",
+    "cornell eng": "Cornell University",
+    "unc-chapel hill": "University of North Carolina at Chapel Hill",
+    "ut dallas": "The University of Texas at Dallas",
+    "utd": "The University of Texas at Dallas",
+    "utk": "The University of Tennessee-Knoxville",
+    "ut knoxville": "The University of Tennessee-Knoxville",
+    "usna": "United States Naval Academy",
+    "usma": "United States Military Academy",
+    "west point": "United States Military Academy",
+    "annapolis": "United States Naval Academy",
+    "nyu abu dhabi": "New York University",
+    "nyu shanghai": "New York University",
+    "oregon state": "Oregon State University",
+    "clemson": "Clemson University",
+    "syracuse": "Syracuse University",
+    "marquette": "Marquette University",
+    "loyola marymount": "Loyola Marymount University",
+    "lmu": "Loyola Marymount University",
+    "scu": "Santa Clara University",
+    "santa clara": "Santa Clara University",
+    "gonzaga": "Gonzaga University",
+    "creighton": "Creighton University",
+    "depaul": "DePaul University",
+    "howard": "Howard University",
+    "howard university": "Howard University",
+    "spelman": "Spelman College",
+    "morehouse": "Morehouse College",
   };
 
   const mappedName = abbreviationMap[normalizedName];
@@ -912,12 +1039,17 @@ async function getOrCreateSystemUser(db: ReturnType<typeof drizzle>): Promise<st
   return newUser.id;
 }
 
+// ─── Batch Insert Types ───────────────────────────────────────────────────────
+
+type SubmissionInsertRow = typeof admissionSubmissions.$inferInsert;
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
   const args = process.argv.slice(2);
   let maxPosts = 15000; // Default: fetch all ~14K posts
   let startAfterDate: string | null = "2018-01-01"; // Default: start from 2018
+  let isDryRun = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--limit" && args[i + 1]) {
@@ -928,14 +1060,27 @@ async function main() {
       startAfterDate = args[i + 1];
       i++;
     }
+    if (args[i] === "--dry-run") {
+      isDryRun = true;
+    }
   }
 
   const connectionString = DATABASE_URL!;
   const client = postgres(connectionString);
   const db = drizzle(client);
 
+  // ─── SIGINT Graceful Shutdown Handler ─────────────────────────────────────
+
+  process.on("SIGINT", () => {
+    console.log("\n\nSIGINT received — shutting down gracefully...");
+    shutdownRequested = true;
+  });
+
   console.log("Starting Reddit r/collegeresults ingestion via Arctic Shift...");
   console.log(`Max posts: ${maxPosts}, Starting after: ${startAfterDate}`);
+  if (isDryRun) {
+    console.log("DRY RUN MODE: No database inserts will be performed.");
+  }
   console.log();
 
   let totalFetched = 0;
@@ -943,11 +1088,13 @@ async function main() {
   let totalInserted = 0;
   let totalSkippedNoSchool = 0;
   let totalSkippedDuplicate = 0;
+  let totalDecisionsFound = 0;
   let afterDate: string | null = startAfterDate;
+  currentAfterCursor = afterDate;
 
   const unmatchedSchoolNames = new Map<string, number>();
 
-  while (totalFetched < maxPosts) {
+  while (totalFetched < maxPosts && !shutdownRequested) {
     process.stdout.write(`Fetching page (after=${afterDate || "start"})... `);
 
     try {
@@ -961,12 +1108,19 @@ async function main() {
       const lastPostDate = new Date(page.posts[page.posts.length - 1].created_utc * 1000).toISOString().split("T")[0];
       console.log(`${page.posts.length} posts (through ${lastPostDate})`);
 
+      // Collect valid submissions into a batch for bulk insert
+      const insertBatch: SubmissionInsertRow[] = [];
+
       for (const post of page.posts) {
+        if (shutdownRequested) break;
+
         const parsed = parsePost(post);
         if (!parsed) continue;
         totalParsed++;
 
         for (const decision of parsed.decisions) {
+          totalDecisionsFound++;
+
           const schoolId = await findSchoolId(db, decision.schoolName);
 
           if (!schoolId) {
@@ -976,6 +1130,12 @@ async function main() {
               (unmatchedSchoolNames.get(normalizedName) || 0) + 1
             );
             totalSkippedNoSchool++;
+            continue;
+          }
+
+          if (isDryRun) {
+            // In dry-run mode, count as "would insert" but skip DB writes
+            totalInserted++;
             continue;
           }
 
@@ -996,68 +1156,104 @@ async function main() {
             continue;
           }
 
-          try {
-            await db.insert(admissionSubmissions).values({
-              userId: null,
-              schoolId,
-              dataSource: "reddit",
-              sourceUrl: `https://www.reddit.com${post.permalink}`,
-              sourcePostId: post.id,
-              admissionCycle: parsed.admissionCycle,
-              decision: decision.decision,
-              applicationRound: decision.applicationRound || "regular",
-              gpaUnweighted: parsed.academics.gpaUnweighted?.toString() ?? null,
-              gpaWeighted: parsed.academics.gpaWeighted?.toString() ?? null,
-              satScore: parsed.academics.satScore,
-              actScore: parsed.academics.actScore,
-              intendedMajor: parsed.intendedMajor,
-              stateOfResidence: parsed.demographics.stateOfResidence,
-              extracurriculars: parsed.extracurriculars,
-              highSchoolType: parsed.demographics.highSchoolType as "public" | "private" | "charter" | "magnet" | "homeschool" | "international" | null,
-              firstGeneration: parsed.demographics.firstGeneration,
-              legacyStatus: parsed.demographics.legacyStatus,
-              financialAidApplied: null,
-              geographicClassification: parsed.demographics.geographicClassification as "rural" | "suburban" | "urban" | null,
-              apCoursesCount: parsed.academics.apCoursesCount,
-              ibCoursesCount: parsed.academics.ibCoursesCount,
-              honorsCoursesCount: parsed.academics.honorsCoursesCount,
-              scholarshipOffered: null,
-              willAttend: null,
-              waitlistOutcome: null,
-              verificationTier: "bronze",
-              submissionStatus: "visible",
-            });
-            totalInserted++;
-          } catch (insertError) {
-            const errorMessage = insertError instanceof Error ? insertError.message : String(insertError);
-            if (!errorMessage.includes("unique")) {
-              console.error(`  Insert error for ${decision.schoolName}: ${errorMessage}`);
+          insertBatch.push({
+            userId: null,
+            schoolId,
+            dataSource: "reddit",
+            sourceUrl: `https://www.reddit.com${post.permalink}`,
+            sourcePostId: post.id,
+            admissionCycle: parsed.admissionCycle,
+            decision: decision.decision,
+            applicationRound: decision.applicationRound || "regular",
+            gpaUnweighted: parsed.academics.gpaUnweighted?.toString() ?? null,
+            gpaWeighted: parsed.academics.gpaWeighted?.toString() ?? null,
+            satScore: parsed.academics.satScore,
+            actScore: parsed.academics.actScore,
+            intendedMajor: parsed.intendedMajor,
+            stateOfResidence: parsed.demographics.stateOfResidence,
+            extracurriculars: parsed.extracurriculars,
+            highSchoolType: parsed.demographics.highSchoolType as "public" | "private" | "charter" | "magnet" | "homeschool" | "international" | null,
+            firstGeneration: parsed.demographics.firstGeneration,
+            legacyStatus: parsed.demographics.legacyStatus,
+            financialAidApplied: null,
+            geographicClassification: parsed.demographics.geographicClassification as "rural" | "suburban" | "urban" | null,
+            apCoursesCount: parsed.academics.apCoursesCount,
+            ibCoursesCount: parsed.academics.ibCoursesCount,
+            honorsCoursesCount: parsed.academics.honorsCoursesCount,
+            scholarshipOffered: null,
+            willAttend: null,
+            waitlistOutcome: null,
+            verificationTier: "bronze",
+            submissionStatus: "visible",
+          });
+
+          // Flush batch when it reaches the batch size threshold
+          if (insertBatch.length >= BATCH_INSERT_SIZE) {
+            try {
+              await db.insert(admissionSubmissions).values(insertBatch).onConflictDoNothing();
+              totalInserted += insertBatch.length;
+            } catch (batchInsertError) {
+              const errorMessage = batchInsertError instanceof Error ? batchInsertError.message : String(batchInsertError);
+              console.error(`  Batch insert error (${insertBatch.length} rows): ${errorMessage}`);
             }
+            insertBatch.length = 0;
           }
         }
       }
 
+      // Flush any remaining rows in the batch (end of page)
+      if (insertBatch.length > 0 && !isDryRun) {
+        try {
+          await db.insert(admissionSubmissions).values(insertBatch).onConflictDoNothing();
+          totalInserted += insertBatch.length;
+        } catch (batchInsertError) {
+          const errorMessage = batchInsertError instanceof Error ? batchInsertError.message : String(batchInsertError);
+          console.error(`  Batch insert error (${insertBatch.length} rows): ${errorMessage}`);
+        }
+      }
+
       afterDate = page.nextAfterDate;
+      currentAfterCursor = afterDate;
       if (!afterDate) {
         console.log("Reached end of subreddit.");
         break;
       }
 
-      // Rate limit
-      await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
+      // Rate limit: maintain minimum delay between requests
+      await new Promise((resolve) => setTimeout(resolve, MINIMUM_REQUEST_DELAY_MS));
     } catch (fetchError) {
       console.error(`Error: ${fetchError instanceof Error ? fetchError.message : fetchError}`);
-      // Wait longer on error, then retry
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      // fetchWithRetry already handles retries; if we still get here, the retries
+      // were exhausted. Log and continue to next page attempt after a brief pause.
+      await new Promise((resolve) => setTimeout(resolve, MINIMUM_REQUEST_DELAY_MS));
     }
   }
 
-  console.log("\n--- Ingestion Complete ---");
+  // ─── Summary ──────────────────────────────────────────────────────────────
+
+  if (shutdownRequested) {
+    console.log("\n--- Ingestion Interrupted (SIGINT) ---");
+    if (currentAfterCursor) {
+      console.log(`Saved cursor: ${currentAfterCursor}`);
+      console.log(`Resume with:`);
+      console.log(`  npx tsx scripts/ingest-reddit.ts --after ${currentAfterCursor}`);
+    }
+  } else {
+    console.log("\n--- Ingestion Complete ---");
+  }
+
   console.log(`Posts fetched: ${totalFetched}`);
   console.log(`Posts with parseable data: ${totalParsed}`);
-  console.log(`Outcomes inserted: ${totalInserted}`);
+  console.log(`Total decisions found: ${totalDecisionsFound}`);
+  if (isDryRun) {
+    console.log(`Decisions that would be inserted (matched school): ${totalInserted}`);
+  } else {
+    console.log(`Outcomes inserted: ${totalInserted}`);
+  }
   console.log(`Skipped (no matching school): ${totalSkippedNoSchool}`);
-  console.log(`Skipped (duplicate): ${totalSkippedDuplicate}`);
+  if (!isDryRun) {
+    console.log(`Skipped (duplicate): ${totalSkippedDuplicate}`);
+  }
 
   if (unmatchedSchoolNames.size > 0) {
     console.log(`\nTop 30 unmatched school names (add to abbreviation map or schools table):`);
@@ -1069,7 +1265,7 @@ async function main() {
     }
   }
 
-  if (afterDate) {
+  if (afterDate && !shutdownRequested) {
     console.log(`\nTo continue from where we left off, run:`);
     console.log(`  npx tsx scripts/ingest-reddit.ts --after ${afterDate}`);
   }

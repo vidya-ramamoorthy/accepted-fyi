@@ -277,3 +277,76 @@ export const getSchoolsByAcceptanceRate = (min: number, max: number) =>
     [`schools-acceptance-rate-${min}-${max}`],
     { revalidate: 3600, tags: ["schools-acceptance-rate"] }
   )();
+
+// ─── Multi-dimension SEO queries ─────────────────────────────────────────────
+
+async function fetchSchoolsByStateAndSatRange(
+  stateAbbreviation: string,
+  satMin: number,
+  satMax: number
+) {
+  const db = getDb();
+  return db
+    .select(SCHOOL_CARD_SELECT)
+    .from(schools)
+    .where(
+      and(
+        eq(schools.state, stateAbbreviation.toUpperCase()),
+        lte(schools.sat25thPercentile, satMax),
+        gte(schools.sat75thPercentile, satMin)
+      )
+    )
+    .orderBy(desc(schools.satAverage), schools.name);
+}
+
+export const getSchoolsByStateAndSatRange = (
+  stateAbbreviation: string,
+  satMin: number,
+  satMax: number
+) =>
+  unstable_cache(
+    () => fetchSchoolsByStateAndSatRange(stateAbbreviation, satMin, satMax),
+    [`schools-state-sat-${stateAbbreviation.toUpperCase()}-${satMin}-${satMax}`],
+    {
+      revalidate: 3600,
+      tags: [
+        `schools-state-${stateAbbreviation.toUpperCase()}`,
+        "schools-sat",
+      ],
+    }
+  )();
+
+async function fetchSchoolsByStateAndAcceptanceRate(
+  stateAbbreviation: string,
+  arMin: number,
+  arMax: number
+) {
+  const db = getDb();
+  return db
+    .select(SCHOOL_CARD_SELECT)
+    .from(schools)
+    .where(
+      and(
+        eq(schools.state, stateAbbreviation.toUpperCase()),
+        between(schools.acceptanceRate, arMin.toString(), arMax.toString())
+      )
+    )
+    .orderBy(schools.acceptanceRate, schools.name);
+}
+
+export const getSchoolsByStateAndAcceptanceRate = (
+  stateAbbreviation: string,
+  arMin: number,
+  arMax: number
+) =>
+  unstable_cache(
+    () => fetchSchoolsByStateAndAcceptanceRate(stateAbbreviation, arMin, arMax),
+    [`schools-state-ar-${stateAbbreviation.toUpperCase()}-${arMin}-${arMax}`],
+    {
+      revalidate: 3600,
+      tags: [
+        `schools-state-${stateAbbreviation.toUpperCase()}`,
+        "schools-acceptance-rate",
+      ],
+    }
+  )();

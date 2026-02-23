@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import SchoolCard from "./SchoolCard";
 import { US_STATES } from "@/lib/constants/us-states";
 import {
@@ -30,7 +31,7 @@ interface SchoolData {
 
 interface FilterableSchoolGridProps {
   schools: SchoolData[];
-  hideFilter?: HideableFilter;
+  hideFilter?: HideableFilter | HideableFilter[];
 }
 
 const SCHOOL_TYPE_OPTIONS = [
@@ -39,15 +40,76 @@ const SCHOOL_TYPE_OPTIONS = [
   { value: "community_college", label: "Community College" },
 ] as const;
 
+const URL_PARAM_KEYS = {
+  state: "state",
+  acceptanceRate: "acceptanceRate",
+  sat: "sat",
+  act: "act",
+  schoolType: "schoolType",
+} as const;
+
+function isFilterHidden(
+  hideFilter: HideableFilter | HideableFilter[] | undefined,
+  filterName: HideableFilter
+): boolean {
+  if (!hideFilter) return false;
+  if (Array.isArray(hideFilter)) return hideFilter.includes(filterName);
+  return hideFilter === filterName;
+}
+
 export default function FilterableSchoolGrid({
   schools,
   hideFilter,
 }: FilterableSchoolGridProps) {
-  const [selectedState, setSelectedState] = useState("");
-  const [selectedAcceptanceRate, setSelectedAcceptanceRate] = useState("");
-  const [selectedSatRange, setSelectedSatRange] = useState("");
-  const [selectedActRange, setSelectedActRange] = useState("");
-  const [selectedSchoolType, setSelectedSchoolType] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [selectedState, setSelectedState] = useState(
+    searchParams.get(URL_PARAM_KEYS.state) ?? ""
+  );
+  const [selectedAcceptanceRate, setSelectedAcceptanceRate] = useState(
+    searchParams.get(URL_PARAM_KEYS.acceptanceRate) ?? ""
+  );
+  const [selectedSatRange, setSelectedSatRange] = useState(
+    searchParams.get(URL_PARAM_KEYS.sat) ?? ""
+  );
+  const [selectedActRange, setSelectedActRange] = useState(
+    searchParams.get(URL_PARAM_KEYS.act) ?? ""
+  );
+  const [selectedSchoolType, setSelectedSchoolType] = useState(
+    searchParams.get(URL_PARAM_KEYS.schoolType) ?? ""
+  );
+
+  const syncFiltersToUrl = useCallback(
+    (updatedFilters: Record<string, string>) => {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(updatedFilters)) {
+        if (value) params.set(key, value);
+      }
+      const queryString = params.toString();
+      const currentPath = window.location.pathname;
+      router.replace(`${currentPath}${queryString ? `?${queryString}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [router]
+  );
+
+  const currentFilterValues = useCallback(
+    () => ({
+      [URL_PARAM_KEYS.state]: selectedState,
+      [URL_PARAM_KEYS.acceptanceRate]: selectedAcceptanceRate,
+      [URL_PARAM_KEYS.sat]: selectedSatRange,
+      [URL_PARAM_KEYS.act]: selectedActRange,
+      [URL_PARAM_KEYS.schoolType]: selectedSchoolType,
+    }),
+    [selectedState, selectedAcceptanceRate, selectedSatRange, selectedActRange, selectedSchoolType]
+  );
+
+  function handleFilterChange(key: string, value: string, setter: (v: string) => void) {
+    setter(value);
+    syncFiltersToUrl({ ...currentFilterValues(), [key]: value });
+  }
 
   const hasActiveFilters =
     selectedState !== "" ||
@@ -127,6 +189,7 @@ export default function FilterableSchoolGrid({
     setSelectedSatRange("");
     setSelectedActRange("");
     setSelectedSchoolType("");
+    syncFiltersToUrl({});
   }
 
   const selectClassName =
@@ -136,10 +199,12 @@ export default function FilterableSchoolGrid({
     <div>
       {/* Filter Bar */}
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        {hideFilter !== "state" && (
+        {!isFilterHidden(hideFilter, "state") && (
           <select
             value={selectedState}
-            onChange={(e) => setSelectedState(e.target.value)}
+            onChange={(e) =>
+              handleFilterChange(URL_PARAM_KEYS.state, e.target.value, setSelectedState)
+            }
             className={selectClassName}
             aria-label="Filter by state"
           >
@@ -152,10 +217,12 @@ export default function FilterableSchoolGrid({
           </select>
         )}
 
-        {hideFilter !== "acceptanceRate" && (
+        {!isFilterHidden(hideFilter, "acceptanceRate") && (
           <select
             value={selectedAcceptanceRate}
-            onChange={(e) => setSelectedAcceptanceRate(e.target.value)}
+            onChange={(e) =>
+              handleFilterChange(URL_PARAM_KEYS.acceptanceRate, e.target.value, setSelectedAcceptanceRate)
+            }
             className={selectClassName}
             aria-label="Filter by acceptance rate"
           >
@@ -168,10 +235,12 @@ export default function FilterableSchoolGrid({
           </select>
         )}
 
-        {hideFilter !== "sat" && (
+        {!isFilterHidden(hideFilter, "sat") && (
           <select
             value={selectedSatRange}
-            onChange={(e) => setSelectedSatRange(e.target.value)}
+            onChange={(e) =>
+              handleFilterChange(URL_PARAM_KEYS.sat, e.target.value, setSelectedSatRange)
+            }
             className={selectClassName}
             aria-label="Filter by SAT score"
           >
@@ -184,10 +253,12 @@ export default function FilterableSchoolGrid({
           </select>
         )}
 
-        {hideFilter !== "act" && (
+        {!isFilterHidden(hideFilter, "act") && (
           <select
             value={selectedActRange}
-            onChange={(e) => setSelectedActRange(e.target.value)}
+            onChange={(e) =>
+              handleFilterChange(URL_PARAM_KEYS.act, e.target.value, setSelectedActRange)
+            }
             className={selectClassName}
             aria-label="Filter by ACT score"
           >
@@ -200,10 +271,12 @@ export default function FilterableSchoolGrid({
           </select>
         )}
 
-        {hideFilter !== "schoolType" && (
+        {!isFilterHidden(hideFilter, "schoolType") && (
           <select
             value={selectedSchoolType}
-            onChange={(e) => setSelectedSchoolType(e.target.value)}
+            onChange={(e) =>
+              handleFilterChange(URL_PARAM_KEYS.schoolType, e.target.value, setSelectedSchoolType)
+            }
             className={selectClassName}
             aria-label="Filter by school type"
           >

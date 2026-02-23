@@ -111,6 +111,32 @@ export default function CollegesHubPage() {
             ))}
           </div>
         </section>
+        {/* Popular Combinations */}
+        <section className="mt-12">
+          <h2 className="text-xl font-bold text-white">Popular Combinations</h2>
+          <p className="mt-2 text-sm text-slate-400">
+            Browse colleges filtered by both state and test score range.
+          </p>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { stateSlug: "california", stateName: "California", satSlug: "1400-1500", satLabel: "1400-1500 SAT" },
+              { stateSlug: "new-york", stateName: "New York", satSlug: "1300-1400", satLabel: "1300-1400 SAT" },
+              { stateSlug: "texas", stateName: "Texas", satSlug: "1200-1300", satLabel: "1200-1300 SAT" },
+              { stateSlug: "massachusetts", stateName: "Massachusetts", satSlug: "1500-1600", satLabel: "1500-1600 SAT" },
+              { stateSlug: "florida", stateName: "Florida", satSlug: "1100-1200", satLabel: "1100-1200 SAT" },
+              { stateSlug: "pennsylvania", stateName: "Pennsylvania", satSlug: "1300-1400", satLabel: "1300-1400 SAT" },
+            ].map((combo) => (
+              <Link
+                key={`${combo.stateSlug}-${combo.satSlug}`}
+                href={`/colleges/state/${combo.stateSlug}/sat/${combo.satSlug}`}
+                className="rounded-xl border border-white/5 bg-slate-900/50 p-4 transition-all hover:border-violet-500/30 hover:bg-slate-900"
+              >
+                <p className="text-sm font-semibold text-white">{combo.stateName}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{combo.satLabel}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   );

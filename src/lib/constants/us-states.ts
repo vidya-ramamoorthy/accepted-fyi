@@ -60,3 +60,4 @@ export const US_STATES: UsState[] = [
 
 export const STATE_BY_SLUG = new Map(US_STATES.map((s) => [s.slug, s]));
 export const STATE_BY_ABBREVIATION = new Map(US_STATES.map((s) => [s.abbreviation, s]));
+export const STATE_SLUG_BY_ABBREVIATION = new Map(US_STATES.map((s) => [s.abbreviation, s.slug]));

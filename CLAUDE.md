@@ -90,6 +90,113 @@
 - "Decision Day" shareable cards for social media virality
 - School-level leaderboards
 
+## Parent Audience Strategy
+
+### Why Parents Matter
+- Parents are the primary decision-influencer in college admissions, especially for:
+  - **First-gen families** with zero context on admissions competitiveness
+  - **Immigrant parents** unfamiliar with the US admissions system
+  - **Parents of freshmen/sophomores** planning years ahead
+- Parents are the ones searching "what SAT score do you need for MIT" at 11pm — aligns perfectly with programmatic SEO strategy
+- Higher willingness to pay for premium features (Phase 2 monetization) compared to students
+
+### Parent-Specific Value Props
+- **Chances Calculator**: "Will my kid get in?" — the #1 parent anxiety, and our hook
+- **Institutional data pages**: acceptance rates, SAT/ACT ranges, class profiles — parents consume this data voraciously
+- **Community-reported outcomes**: "Students like my child who applied to Stanford" — the data parents can't find anywhere else
+- **Decision timelines**: when schools release EA/ED/RD decisions — parents track this obsessively
+
+### Channel Strategy for Parents
+
+| Channel | Tactic | Priority |
+|---------|--------|----------|
+| **Facebook Groups** | Join and contribute to groups like "College Admissions & Financial Aid" (100K+ members), "Paying for College 101", school-specific parent groups ("Parents of Stanford Applicants 2027"), regional groups ("Bay Area College Prep Parents"). Answer questions with data, soft-promote the tool. | High |
+| **LinkedIn** | "Building in public" posts — share milestones, admissions data insights, founder story ("I'm building the Levels.fyi for college admissions"). Reaches parents in professional network, YC scouts, potential advisors/investors, college counselors. | High |
+| **Reddit** | r/ApplyingToCollege has active parent posters. r/Parenting occasionally has college threads. Same guerrilla approach as student channels. | Medium |
+| **Parent-focused SEO** | Target long-tail queries parents search: "average GPA for UCLA admission", "is 1400 SAT good enough for Ivy League", "college acceptance rate calculator". These have high intent and low competition. | High |
+
+### LinkedIn — Build in Public, NOT Stealth Mode
+- **No stealth mode.** The moat is the data network effect, not proprietary tech. Stealth delays network growth.
+- Levels.fyi was never in stealth — they started with a public Google Sheet
+- LinkedIn is ideal for the founder narrative and reaching parents, advisors, YC alumni
+- **What to share**: milestones, data insights, admissions trends, product updates
+- **What to keep quiet**: specific growth metrics (exact user counts) until they're impressive enough for YC
+
+### Parent UX Considerations
+- Parents and students may share the same account or browse together — keep UI approachable for non-Gen-Z users
+- Consider a "Parent Guide" landing page explaining what the platform is and how their child can use it
+- Email digest option: weekly summary of new data for schools on their child's wishlist (engagement + retention)
+- Parent-friendly language in tooltips and explainers — avoid admissions jargon without context
+
+## Content Strategy & Sample Posts
+
+### Channel Overview
+
+| Channel | Audience | Content Type | Timing |
+|---------|----------|-------------|--------|
+| TikTok / Instagram Reels | Students (Gen Z) | Short-form video: teasers, data insights, decision card reveals | Teaser: pre-launch. Full push: March RD wave |
+| Reddit (r/ApplyingToCollege) | Students + parents | Text posts, megathread comments, "chance me" replies | During decision releases, ongoing |
+| Facebook Groups | Parents (35-55) | Helpful text posts in admissions parent groups | Ongoing, peak March-April |
+| LinkedIn | Founders, parents, advisors, YC scouts | "Building in public" posts — milestones, data insights | Start immediately, no live product required |
+| Discord | Students | Server intros, bot integration (future) | After launch |
+
+### Content Cadence
+- **LinkedIn**: 1-2x/week (building in public narrative)
+- **TikTok/Reels**: 3-5x/week during March decision wave, 1x/week otherwise
+- **Reddit**: Opportunistic — post during decision megathreads, reply to "chance me" posts
+- **Facebook**: 1x/week in 3-5 active parent groups, respond to questions with data
+
+### Pre-Launch vs Post-Launch Content
+- **Pre-launch (NOW through mid-March)**: Teasers (no link), LinkedIn origin story, soft-launch in 1-2 Discord servers for beta feedback
+- **Launch (mid-March, aligned with RD releases)**: Full push across all channels with live link, shareable decision cards, data insight videos
+- **Post-launch (April+)**: Recurring data insight series, user testimonial reposts, school-specific content
+
+## Launch Logistics Checklist
+
+### Blocks Launch (Must Complete Before Public Reveal)
+1. **Deploy to Vercel** — point accepted.fyi domain to Vercel hosting
+2. **Seed institutional data** — run College Scorecard API ingestion so school pages have real stats (acceptance rates, SAT/ACT ranges, enrollment)
+3. **Build shareable decision cards** — branded image cards with school logo, decision badge, anonymized stats. Non-negotiable for TikTok/Instagram virality
+4. **End-to-end testing** — recruit 5-10 friends to test the full flow: sign up → submit → browse → chances calculator
+5. **Seed 50-100 crowdsourced submissions** — either from beta testers or parsed Reddit data, so browse/chances pages aren't empty
+
+### Should Complete Before Launch
+6. **Apple Sign-In** — ~50% of student audience is on iPhone, Google-only login loses conversions
+7. **Reddit data ingestion pipeline** — parse r/ApplyingToCollege decision megathreads to seed crowdsourced data at scale
+8. **Open Graph / social meta tags** — ensure shared links show a compelling preview card on all platforms
+9. **Mobile responsiveness audit** — students will access primarily from phones via TikTok/Instagram links
+
+### Can Launch Without (Build After)
+10. .edu email verification (Silver tier)
+11. Email notification system / weekly digests
+12. Document verification (Gold tier — paused until 5,000 users)
+13. Data ingestion from College Confidential, Common Data Set PDFs
+
+### Target Launch Window
+- **Ideal: March 15-20, 2026** — Regular Decision releases begin (Ivy Day typically late March)
+- **Why**: Peak admissions anxiety, students actively posting decisions, parents refreshing portals
+- **Risk of launching before ready**: empty data = low trust = users don't come back. Better to launch 1 week late with seeded data than 1 week early with empty pages.
+
+## TikTok Strategy
+
+### Do NOT Reveal Yet (Feb 22)
+- Product is not deployed to a live URL
+- Shareable decision cards (the viral mechanic) are not built
+- No real crowdsourced data to show — empty browse pages kill credibility
+- Launching a reveal video with no working link wastes the initial attention spike
+
+### Pre-Launch Teaser Phase (Feb 22 - March 10)
+- Film teaser content NOW but don't post the link
+- Build anticipation: "something is coming for decision season"
+- Show the problem (College Confidential chaos, useless chance-me threads) without revealing the solution yet
+- Use trending audio and admissions anxiety content to build following first
+
+### Launch Phase (March 15-20)
+- Reveal video with live link, shareable cards, real data
+- Post daily during decision wave (March 15 - April 1)
+- Engage with every comment, duet decision reaction videos
+- Cross-post decision cards from users who share on their stories
+
 ## YC Timeline
 - **Target:** YC Fall 2026 batch (application deadline ~Aug/Sep 2026)
 - **Milestones needed:** 5,000+ outcomes, 10,000+ users, 20%+ MoM growth
@@ -112,10 +219,38 @@
 - **College Scorecard API integration**: Ingest institutional-level stats (acceptance rates, SAT/ACT ranges, enrollment demographics, graduation rates) for all US schools. Free government API.
 - **IPEDS data import**: Bulk import admissions/enrollment/financial aid data. Every school receiving federal aid reports here.
 - **Common Data Set (CDS) parsing**: Annual per-school reports with detailed admissions breakdowns. Parse PDFs with AI.
-- **Reddit r/ApplyingToCollege scraping**: Parse decision megathreads with Claude to extract structured individual outcomes (GPA, SAT, decision, school). Label as `source: "reddit"`, `verification_tier: "public_scraped"`.
+- **Reddit r/collegeresults ingestion** (DONE): See "Reddit Data Pipeline" section below.
 - **College Confidential parsing**: Same approach for CC results threads. Decades of historical data available.
 - **School class profile ingestion**: Scrape "Class of 20XX" profile pages from school admissions sites for aggregate demographics and score ranges.
 - All seeded data clearly labeled with source provenance — never mixed with verified user submissions without disclosure.
+
+##### Reddit Data Pipeline (Implemented)
+
+**Source:** r/collegeresults — a 67K-subscriber subreddit where students post structured admissions results using a standardized template with Demographics, Academics, Standardized Testing, Extracurriculars, and Decisions sections.
+
+**Data access:** [Arctic Shift](https://arctic-shift.photon-reddit.com) — a free, public Reddit archive that provides full historical access to Reddit data. Arctic Shift uses Pushshift archives for pre-April 2023 data and collects directly from the official Reddit API for newer posts. Posts are archived within seconds of creation. This bypasses Reddit's public API limit of ~1,000 posts per listing endpoint.
+
+**Pipeline:** `scripts/ingest-reddit.ts`
+- Fetches all ~14,000 posts from r/collegeresults via Arctic Shift's `/api/posts/search` endpoint
+- Parses the standardized template (bold `**Decisions**`, italic `*Acceptances:*`, spoiler tags `>!Accepted!<`, hash headers `# Results`)
+- Extracts per-school decisions with GPA, SAT/ACT, application round, demographics
+- Matches school names to our `schools` table using exact match, case-insensitive partial match, and a 200+ entry abbreviation map (MIT, UPenn, etc.)
+- Deduplicates via partial unique index on `(source_post_id, school_id) WHERE user_id IS NULL`
+- All records stored with `data_source: "reddit"`, `verification_tier: "bronze"`, `user_id: NULL`
+- CHECK constraint ensures `user_id` is required for `data_source = 'user'` but allowed null for scraped sources
+
+**Results (as of Feb 2026):**
+- 13,977 posts fetched (2018–2026)
+- ~660 posts parseable (many posts are discussion/meta, not results)
+- ~3,100+ individual admission outcomes inserted
+- Covers cycles from 2019-2020 through 2025-2026
+- Top schools: Stanford, UCLA, UC Berkeley, UPenn, Yale, Princeton, Harvard, Cornell, Columbia, Michigan
+
+**Limitations:**
+- Arctic Shift excludes private/quarantined subreddits (not an issue for r/collegeresults)
+- Pre-2015 Pushshift data has known completeness gaps
+- Parser handles the official template + common variants but does not cover all freeform formats (~5% parse rate across all posts; many posts are non-results discussion)
+- Unmatched school names (~1,000 decisions skipped) from misspellings, international schools, or freeform annotations mixed into school names
 
 #### Data Schema Additions for Seeded Data
 - `data_source` field on submissions: `"user"` | `"reddit"` | `"college_confidential"` | `"public_scraped"`
@@ -124,7 +259,9 @@
 
 ### Phase 1: Verification & PII Safety
 
-#### Document Verification (Gold Tier)
+#### Document Verification (Gold Tier) — PAUSED until 5,000 users
+> **Status:** Paused. Will revisit when the platform reaches 5,000 registered users. The current focus is on data ingestion, engagement features (Chances Calculator), and SEO growth.
+
 - Client-side redaction tool: before uploading admission letter screenshot, users can black out name, address, student ID with a drawing tool
 - Server-side AI extraction: Claude Vision processes image in memory, extracts ONLY: school name, decision, cycle year
 - **Immediate deletion**: image never written to database or storage. Processed in serverless function, result returned, image discarded

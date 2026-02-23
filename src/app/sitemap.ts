@@ -3,11 +3,17 @@ import { getDb } from "@/lib/db";
 import { schools } from "@/lib/db/schema";
 import { US_STATES } from "@/lib/constants/us-states";
 import { SAT_RANGES, ACT_RANGES, ACCEPTANCE_RATE_RANGES } from "@/lib/constants/score-ranges";
+import {
+  getStateSatCombinations,
+  getStateAcceptanceRateCombinations,
+} from "@/lib/db/queries/seo-combinations";
 
 const BASE_URL = "https://accepted.fyi";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let schoolUrls: MetadataRoute.Sitemap = [];
+  let stateSatUrls: MetadataRoute.Sitemap = [];
+  let stateAcceptanceRateUrls: MetadataRoute.Sitemap = [];
 
   try {
     const db = getDb();
@@ -20,6 +26,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: school.updatedAt ?? new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.8,
+    }));
+
+    // Multi-dimension SEO pages
+    const [stateSatCombinations, stateArCombinations] = await Promise.all([
+      getStateSatCombinations(),
+      getStateAcceptanceRateCombinations(),
+    ]);
+
+    stateSatUrls = stateSatCombinations.map((combo) => ({
+      url: `${BASE_URL}/colleges/state/${combo.stateSlug}/sat/${combo.rangeSlug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
+    stateAcceptanceRateUrls = stateArCombinations.map((combo) => ({
+      url: `${BASE_URL}/colleges/state/${combo.stateSlug}/acceptance-rate/${combo.rangeSlug}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
     }));
   } catch {
     // If DB is unavailable, return static routes only
@@ -72,6 +96,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...satUrls,
     ...actUrls,
     ...acceptanceRateUrls,
+    ...stateSatUrls,
+    ...stateAcceptanceRateUrls,
     ...schoolUrls,
   ];
 }
