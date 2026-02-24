@@ -3,26 +3,41 @@ import * as fs from "fs";
 import * as path from "path";
 
 const AUTH_STATE_PATH = path.join(__dirname, ".auth", "user.json");
-const MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
 
-setup("authenticate via Google OAuth", async ({ page }) => {
-  // Re-use existing auth state if it's fresh and has valid cookies
+setup("authenticate via Google OAuth", async ({ page, context }) => {
+  // Try re-using existing auth state by loading cookies and validating the session
   if (fs.existsSync(AUTH_STATE_PATH)) {
-    const stat = fs.statSync(AUTH_STATE_PATH);
-    const ageMs = Date.now() - stat.mtimeMs;
+    const authState = JSON.parse(fs.readFileSync(AUTH_STATE_PATH, "utf-8"));
+    const hasSupabaseCookies = authState.cookies?.some(
+      (cookie: { name: string }) =>
+        cookie.name.includes("sb-") || cookie.name.includes("supabase")
+    );
 
-    if (ageMs < MAX_AGE_MS) {
-      const authState = JSON.parse(fs.readFileSync(AUTH_STATE_PATH, "utf-8"));
-      const hasSupabaseCookies = authState.cookies?.some(
-        (cookie: { name: string }) =>
-          cookie.name.includes("sb-") || cookie.name.includes("supabase")
-      );
+    if (hasSupabaseCookies) {
+      // Load saved cookies into the browser context
+      await context.addCookies(authState.cookies);
 
-      if (hasSupabaseCookies) {
+      // Navigate to a protected page — the middleware will refresh the
+      // access token using the refresh token if it's expired. The browser
+      // stores the refreshed cookies from the Set-Cookie response headers.
+      await page.goto("/dashboard");
+
+      // Check if we landed on an authenticated page (not redirected to login)
+      const isAuthenticated = await page
+        .waitForURL(/\/(dashboard|browse|submit|chances)/, { timeout: 10_000 })
+        .then(() => true)
+        .catch(() => false);
+
+      if (isAuthenticated) {
         // eslint-disable-next-line no-console
-        console.log("Re-using existing auth state (< 12h old with valid cookies).");
+        console.log("Existing auth state is valid (session refreshed if needed).");
+        // Save the refreshed state so subsequent tests get fresh tokens
+        await page.context().storageState({ path: AUTH_STATE_PATH });
         return;
       }
+
+      // eslint-disable-next-line no-console
+      console.log("Existing auth state expired (refresh token invalid). Need manual sign-in.");
     }
   }
 
