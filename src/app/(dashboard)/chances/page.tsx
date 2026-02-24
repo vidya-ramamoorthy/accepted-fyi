@@ -82,6 +82,7 @@ export default function ChancesPage() {
   const [apCoursesCount, setApCoursesCount] = useState("");
   const [admissionCycle, setAdmissionCycle] = useState("");
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [results, setResults] = useState<ChancesResponse | null>(null);
@@ -96,10 +97,61 @@ export default function ChancesPage() {
     reach: reachRef,
   };
 
+  const chancesInputClass = (field: string) =>
+    fieldErrors[field]
+      ? inputClassName.replace("border-slate-700", "border-red-500")
+      : inputClassName;
+
+  const chancesSelectClass = (field: string) =>
+    fieldErrors[field]
+      ? selectClassName.replace("border-slate-700", "border-red-500")
+      : selectClassName;
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!gpaUnweighted && !satScore && !actScore) {
+      errors.statsRequired = "At least one stat is required (GPA, SAT, or ACT)";
+    }
+
+    if (!stateOfResidence) {
+      errors.stateOfResidence = "State of residence is required";
+    }
+
+    if (gpaUnweighted) {
+      const gpa = parseFloat(gpaUnweighted);
+      if (isNaN(gpa) || gpa < 0 || gpa > 4.0) {
+        errors.gpaUnweighted = "GPA must be between 0 and 4.0";
+      }
+    }
+
+    if (satScore) {
+      const sat = parseInt(satScore, 10);
+      if (isNaN(sat) || sat < 400 || sat > 1600) {
+        errors.satScore = "SAT score must be between 400 and 1600";
+      }
+    }
+
+    if (actScore) {
+      const act = parseInt(actScore, 10);
+      if (isNaN(act) || act < 1 || act > 36) {
+        errors.actScore = "ACT score must be between 1 and 36";
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setIsLoading(true);
     setErrorMessage("");
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
 
     const params = new URLSearchParams();
     if (gpaUnweighted) params.set("gpa", gpaUnweighted);
@@ -158,7 +210,7 @@ export default function ChancesPage() {
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Form Panel */}
         <div>
-          <form onSubmit={handleSubmit} className="sticky top-28">
+          <form onSubmit={handleSubmit} noValidate className="sticky top-28">
             <div className="rounded-xl border border-white/5 bg-slate-900/50 p-6 space-y-4">
               <h2 className="text-lg font-semibold text-white">Your Stats</h2>
 
@@ -166,6 +218,7 @@ export default function ChancesPage() {
                 <label htmlFor="gpaUnweighted" className="block text-sm font-medium text-slate-300">
                   GPA (Unweighted)
                 </label>
+                <ChancesFieldError message={fieldErrors.statsRequired} />
                 <input
                   id="gpaUnweighted"
                   type="number"
@@ -175,8 +228,9 @@ export default function ChancesPage() {
                   value={gpaUnweighted}
                   onChange={(event) => setGpaUnweighted(event.target.value)}
                   placeholder="e.g., 3.85"
-                  className={inputClassName}
+                  className={chancesInputClass("gpaUnweighted")}
                 />
+                <ChancesFieldError message={fieldErrors.gpaUnweighted} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -192,8 +246,9 @@ export default function ChancesPage() {
                     value={satScore}
                     onChange={(event) => setSatScore(event.target.value)}
                     placeholder="e.g., 1520"
-                    className={inputClassName}
+                    className={chancesInputClass("satScore")}
                   />
+                  <ChancesFieldError message={fieldErrors.satScore} />
                 </div>
                 <div>
                   <label htmlFor="actScore" className="block text-sm font-medium text-slate-300">
@@ -207,8 +262,9 @@ export default function ChancesPage() {
                     value={actScore}
                     onChange={(event) => setActScore(event.target.value)}
                     placeholder="e.g., 34"
-                    className={inputClassName}
+                    className={chancesInputClass("actScore")}
                   />
+                  <ChancesFieldError message={fieldErrors.actScore} />
                 </div>
               </div>
 
@@ -220,8 +276,7 @@ export default function ChancesPage() {
                   id="stateOfResidence"
                   value={stateOfResidence}
                   onChange={(event) => setStateOfResidence(event.target.value)}
-                  required
-                  className={selectClassName}
+                  className={chancesSelectClass("stateOfResidence")}
                 >
                   <option value="">Select state</option>
                   {US_STATES.map((state) => (
@@ -230,6 +285,7 @@ export default function ChancesPage() {
                     </option>
                   ))}
                 </select>
+                <ChancesFieldError message={fieldErrors.stateOfResidence} />
               </div>
 
               <div>
@@ -513,4 +569,9 @@ function SchoolCard({
       )}
     </Link>
   );
+}
+
+function ChancesFieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="mt-1 text-xs text-red-400">{message}</p>;
 }

@@ -98,13 +98,93 @@ export default function SubmitPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [submittedSubmissionId, setSubmittedSubmissionId] = useState<string | null>(null);
   const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const showWaitlistOutcome = decision === "waitlisted";
 
+  const inputClass = (field: string) =>
+    fieldErrors[field]
+      ? inputClassName.replace("border-slate-700", "border-red-500")
+      : inputClassName;
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!schoolName || schoolName.trim().length < 2) {
+      errors.schoolName = "School name is required (at least 2 characters)";
+    }
+
+    if (!stateOfResidence || stateOfResidence.trim().length === 0) {
+      errors.stateOfResidence = "State of residence is required";
+    }
+
+    const cyclePattern = /^\d{4}-\d{4}$/;
+    if (!admissionCycle || !cyclePattern.test(admissionCycle)) {
+      errors.admissionCycle = "Admission cycle must be in YYYY-YYYY format";
+    }
+
+    if (gpaUnweighted) {
+      const gpa = parseFloat(gpaUnweighted);
+      if (isNaN(gpa) || gpa < 0 || gpa > 4.0) {
+        errors.gpaUnweighted = "GPA must be between 0 and 4.0";
+      }
+    }
+
+    if (gpaWeighted) {
+      const gpa = parseFloat(gpaWeighted);
+      if (isNaN(gpa) || gpa < 0 || gpa > 5.0) {
+        errors.gpaWeighted = "Weighted GPA must be between 0 and 5.0";
+      }
+    }
+
+    if (satScore) {
+      const sat = parseInt(satScore, 10);
+      if (isNaN(sat) || sat < 400 || sat > 1600) {
+        errors.satScore = "SAT score must be between 400 and 1600";
+      }
+    }
+
+    if (actScore) {
+      const act = parseInt(actScore, 10);
+      if (isNaN(act) || act < 1 || act > 36) {
+        errors.actScore = "ACT score must be between 1 and 36";
+      }
+    }
+
+    if (apCoursesCount) {
+      const count = parseInt(apCoursesCount, 10);
+      if (isNaN(count) || count < 0 || count > 30) {
+        errors.apCoursesCount = "AP courses must be between 0 and 30";
+      }
+    }
+
+    if (ibCoursesCount) {
+      const count = parseInt(ibCoursesCount, 10);
+      if (isNaN(count) || count < 0 || count > 30) {
+        errors.ibCoursesCount = "IB courses must be between 0 and 30";
+      }
+    }
+
+    if (honorsCoursesCount) {
+      const count = parseInt(honorsCoursesCount, 10);
+      if (isNaN(count) || count < 0 || count > 30) {
+        errors.honorsCoursesCount = "Honors courses must be between 0 and 30";
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setIsSubmitting(true);
     setErrorMessage("");
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       const response = await fetch("/api/submissions", {
@@ -185,7 +265,7 @@ export default function SubmitPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+      <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-6">
         {/* Honeypot — invisible to humans, filled by bots */}
         <div aria-hidden="true" className="absolute left-[-9999px] h-0 overflow-hidden">
           <label htmlFor="website">Website</label>
@@ -217,8 +297,9 @@ export default function SubmitPage() {
                 if (city) setSchoolCity(city);
               }}
               required
-              className={inputClassName}
+              className={inputClass("schoolName")}
             />
+            <FieldError message={fieldErrors.schoolName} />
             <p className="mt-1 text-xs text-slate-500">
               Start typing to see suggestions, or enter any school name
             </p>
@@ -273,8 +354,9 @@ export default function SubmitPage() {
                 value={admissionCycle}
                 onChange={(event) => setAdmissionCycle(event.target.value)}
                 placeholder="e.g., 2025-2026"
-                className={inputClassName}
+                className={inputClass("admissionCycle")}
               />
+              <FieldError message={fieldErrors.admissionCycle} />
             </div>
             <div>
               <label htmlFor="stateOfResidence" className="block text-sm font-medium text-slate-300">
@@ -284,8 +366,9 @@ export default function SubmitPage() {
                 id="stateOfResidence"
                 value={stateOfResidence}
                 onSelect={(abbreviation) => setStateOfResidence(abbreviation)}
-                className={`${inputClassName} uppercase`}
+                className={`${inputClass("stateOfResidence")} uppercase`}
               />
+              <FieldError message={fieldErrors.stateOfResidence} />
             </div>
           </div>
 
@@ -328,8 +411,9 @@ export default function SubmitPage() {
                 value={gpaUnweighted}
                 onChange={(event) => setGpaUnweighted(event.target.value)}
                 placeholder="e.g., 3.85"
-                className={inputClassName}
+                className={inputClass("gpaUnweighted")}
               />
+              <FieldError message={fieldErrors.gpaUnweighted} />
             </div>
             <div>
               <label htmlFor="satScore" className="block text-sm font-medium text-slate-300">
@@ -343,8 +427,9 @@ export default function SubmitPage() {
                 value={satScore}
                 onChange={(event) => setSatScore(event.target.value)}
                 placeholder="e.g., 1520"
-                className={inputClassName}
+                className={inputClass("satScore")}
               />
+              <FieldError message={fieldErrors.satScore} />
             </div>
           </div>
 
@@ -372,8 +457,9 @@ export default function SubmitPage() {
                 value={actScore}
                 onChange={(event) => setActScore(event.target.value)}
                 placeholder="e.g., 34"
-                className={inputClassName}
+                className={inputClass("actScore")}
               />
+              <FieldError message={fieldErrors.actScore} />
             </div>
           </div>
         </div>
@@ -418,8 +504,9 @@ export default function SubmitPage() {
                     value={gpaWeighted}
                     onChange={(event) => setGpaWeighted(event.target.value)}
                     placeholder="e.g., 4.32"
-                    className={inputClassName}
+                    className={inputClass("gpaWeighted")}
                   />
+                  <FieldError message={fieldErrors.gpaWeighted} />
                 </div>
                 <div>
                   <label htmlFor="highSchoolType" className="block text-sm font-medium text-slate-300">
@@ -453,8 +540,9 @@ export default function SubmitPage() {
                     value={apCoursesCount}
                     onChange={(event) => setApCoursesCount(event.target.value)}
                     placeholder="e.g., 8"
-                    className={inputClassName}
+                    className={inputClass("apCoursesCount")}
                   />
+                  <FieldError message={fieldErrors.apCoursesCount} />
                 </div>
                 <div>
                   <label htmlFor="ibCoursesCount" className="block text-sm font-medium text-slate-300">
@@ -468,8 +556,9 @@ export default function SubmitPage() {
                     value={ibCoursesCount}
                     onChange={(event) => setIbCoursesCount(event.target.value)}
                     placeholder="e.g., 6"
-                    className={inputClassName}
+                    className={inputClass("ibCoursesCount")}
                   />
+                  <FieldError message={fieldErrors.ibCoursesCount} />
                 </div>
                 <div>
                   <label htmlFor="honorsCoursesCount" className="block text-sm font-medium text-slate-300">
@@ -483,8 +572,9 @@ export default function SubmitPage() {
                     value={honorsCoursesCount}
                     onChange={(event) => setHonorsCoursesCount(event.target.value)}
                     placeholder="e.g., 4"
-                    className={inputClassName}
+                    className={inputClass("honorsCoursesCount")}
                   />
+                  <FieldError message={fieldErrors.honorsCoursesCount} />
                 </div>
               </div>
 
@@ -706,4 +796,9 @@ function PostSubmissionSharePrompt({
       </Link>
     </div>
   );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="mt-1 text-xs text-red-400">{message}</p>;
 }

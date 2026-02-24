@@ -51,13 +51,13 @@ test.describe("Chances calculator page (authenticated)", () => {
   });
 
   test("shows validation error when state is missing", async ({ page }) => {
-    // Fill GPA but leave required state empty, then submit
+    // Fill GPA but leave state empty, then submit
     await page.getByLabel(/gpa \(unweighted\)/i).fill("3.8");
     await page.getByLabel(/sat score/i).fill("1450");
     await page.getByRole("button", { name: /calculate my chances/i }).click();
 
-    // The browser's native validation should prevent submission since state is required,
-    // or the API returns an error. Either way, no results should appear.
+    // Client-side validation catches missing state before API call
+    await expect(page.getByText("State of residence is required")).toBeVisible();
     const hasResults = await page.getByText(/schools matched/i).isVisible().catch(() => false);
     expect(hasResults).toBe(false);
   });
