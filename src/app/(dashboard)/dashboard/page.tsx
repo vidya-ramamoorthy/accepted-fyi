@@ -1,10 +1,84 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { findOrCreateUser } from "@/lib/db/queries/users";
 import { getSubmissionsByUser } from "@/lib/db/queries/submissions";
+import { getPlatformStats } from "@/lib/db/queries/platform-stats";
 import { extractUserProfileData } from "@/lib/utils/auth-helpers";
 import SubmissionCard from "@/components/submissions/SubmissionCard";
 import ShareCardButton from "@/components/cards/ShareCardButton";
 import Link from "next/link";
+
+const MILESTONES = [
+  {
+    target: 500,
+    label: ".edu Verification & Email Digests",
+  },
+  {
+    target: 5000,
+    label: "Gold (Document) Verification",
+  },
+] as const;
+
+function formatNumber(value: number): string {
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  }
+  return value.toLocaleString();
+}
+
+function StatCard({
+  label,
+  value,
+  growth,
+}: {
+  label: string;
+  value: number;
+  growth?: number;
+}) {
+  return (
+    <div className="rounded-xl border border-white/5 bg-slate-900/50 p-4">
+      <p className="text-xs font-medium text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-white">
+        {formatNumber(value)}
+      </p>
+      {growth !== undefined && growth > 0 && (
+        <p className="mt-1 text-xs font-medium text-emerald-400">
+          +{growth} this week
+        </p>
+      )}
+    </div>
+  );
+}
+
+function MilestoneBar({
+  current,
+  target,
+  label,
+}: {
+  current: number;
+  target: number;
+  label: string;
+}) {
+  const percentage = Math.min((current / target) * 100, 100);
+  const isComplete = current >= target;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium text-slate-300">{label}</span>
+        <span className="text-slate-400">
+          {formatNumber(current)} / {formatNumber(target)} users
+          {isComplete ? " — Ready!" : ` (${Math.round(percentage)}%)`}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-500 transition-all"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
@@ -14,11 +88,56 @@ export default async function DashboardPage() {
 
   if (!authUser) return null;
 
-  const userProfile = await findOrCreateUser(extractUserProfileData(authUser));
+  const [userProfile, platformStats] = await Promise.all([
+    findOrCreateUser(extractUserProfileData(authUser)),
+    getPlatformStats(),
+  ]);
   const submissions = await getSubmissionsByUser(userProfile.id);
 
   return (
     <div>
+      {/* Platform Stats */}
+      <section className="mb-8">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+          Platform Growth
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard
+            label="Total Users"
+            value={platformStats.totalUsers}
+            growth={platformStats.usersLast7Days}
+          />
+          <StatCard
+            label="Users Who Submitted"
+            value={platformStats.usersWithSubmissions}
+          />
+          <StatCard
+            label="User Submissions"
+            value={platformStats.userSubmissions}
+            growth={platformStats.submissionsLast7Days}
+          />
+          <StatCard
+            label="Reddit Submissions"
+            value={platformStats.redditSubmissions}
+          />
+        </div>
+
+        {/* Milestone Progress */}
+        <div className="mt-4 space-y-3 rounded-xl border border-white/5 bg-slate-900/50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Feature Milestones
+          </p>
+          {MILESTONES.map((milestone) => (
+            <MilestoneBar
+              key={milestone.target}
+              current={platformStats.totalUsers}
+              target={milestone.target}
+              label={milestone.label}
+            />
+          ))}
+        </div>
+      </section>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">My Dashboard</h1>
