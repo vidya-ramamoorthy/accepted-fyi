@@ -32,7 +32,7 @@
 | **Total/month**      | **~$2.50**        | **~$26.50**        | **~$59.50**        |
 | **Total/year**       | **~$30**          | **~$318**          | **~$714**          |
 
-> Year 1 add ~$115 for fixed costs (Apple Developer $99 + domain registration $18).
+> Year 1 add ~$18 for fixed costs (domain registration $18).
 
 ---
 

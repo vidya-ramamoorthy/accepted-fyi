@@ -272,7 +272,6 @@ The college admissions cycle creates natural demand waves:
 |----------|---------|--------|
 | Infrastructure (Vercel + Supabase + Upstash) | $0-25 | $0-300 |
 | Domain (accepted.fyi) | — | $15-20 |
-| Apple Developer Account | — | $99 |
 | Pizza/food for seeding events (Phase 1) | $200 (one-time) | $200 |
 | TikTok/Instagram boosted posts (Phase 2) | $50-100 | $600-1,200 |
 | SEO tools (Ahrefs or similar, Phase 3) | $99 | $1,188 |
