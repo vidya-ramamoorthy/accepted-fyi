@@ -16,21 +16,6 @@ interface DecisionCardLayoutProps {
   variant: "og" | "story";
 }
 
-/**
- * Derives a Google Favicon URL from a school website domain.
- * Falls back to null if no website is available.
- */
-function getSchoolLogoUrl(website: string | null): string | null {
-  if (!website) return null;
-  try {
-    const url = website.startsWith("http") ? website : `https://${website}`;
-    const domain = new URL(url).hostname;
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-  } catch {
-    return null;
-  }
-}
-
 function getLocationString(city: string | null, state: string): string {
   if (city) return `${city}, ${state}`;
   return state;
@@ -40,34 +25,19 @@ function getLocationString(city: string | null, state: string): string {
  * Pure presentational card layout for Satori image generation.
  * Uses ONLY inline styles — Satori does not support Tailwind or CSS classes.
  *
- * Design philosophy: celebrate the student's achievement. The card is about
- * THEM, not about us. Branding is a subtle watermark at the bottom.
- * No GPA/SAT/ACT (privacy). No ED/EA/RD round labels (unnecessary clutter).
+ * Design: Typography Hero — the school name IS the visual hero.
+ * Bold, massive text. No logos (favicons look bad at scale).
+ * Celebrates the student's achievement, not our brand.
  */
 export default function DecisionCardLayout({ data, variant }: DecisionCardLayoutProps) {
   const colors = getDecisionCardColors(data.decision);
-  const logoUrl = getSchoolLogoUrl(data.schoolWebsite);
   const location = getLocationString(data.schoolCity, data.schoolState);
 
   if (variant === "story") {
-    return (
-      <StoryCard
-        data={data}
-        colors={colors}
-        logoUrl={logoUrl}
-        location={location}
-      />
-    );
+    return <StoryCard data={data} colors={colors} location={location} />;
   }
 
-  return (
-    <OgCard
-      data={data}
-      colors={colors}
-      logoUrl={logoUrl}
-      location={location}
-    />
-  );
+  return <OgCard data={data} colors={colors} location={location} />;
 }
 
 // --- Shared Types ---
@@ -75,13 +45,15 @@ export default function DecisionCardLayout({ data, variant }: DecisionCardLayout
 interface CardVariantProps {
   data: DecisionCardData;
   colors: { accent: string; badge: string; badgeText: string; label: string };
-  logoUrl: string | null;
   location: string;
 }
 
 // --- OG Card (1200x630) ---
 
-function OgCard({ data, colors, logoUrl, location }: CardVariantProps) {
+function OgCard({ data, colors, location }: CardVariantProps) {
+  const detailParts = [data.intendedMajor, data.admissionCycle].filter(Boolean);
+  const detailLine = detailParts.join(" · ");
+
   return (
     <div
       style={{
@@ -109,70 +81,40 @@ function OgCard({ data, colors, logoUrl, location }: CardVariantProps) {
           display: "flex",
           flexDirection: "column",
           flex: 1,
-          padding: "48px 56px 0 56px",
+          padding: "52px 64px 0 64px",
+          justifyContent: "center",
         }}
       >
-        {/* School header: logo + name + location */}
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logoUrl}
-              alt=""
-              width={80}
-              height={80}
-              style={{ borderRadius: 16, backgroundColor: "#1e293b" }}
-            />
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 80,
-                height: 80,
-                borderRadius: 16,
-                backgroundColor: "#1e293b",
-                fontSize: 40,
-                fontWeight: 700,
-                color: "#a78bfa",
-              }}
-            >
-              {data.schoolName.charAt(0)}
-            </div>
-          )}
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 38,
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {data.schoolName.toUpperCase()}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 20,
-                color: "#94a3b8",
-                marginTop: 8,
-              }}
-            >
-              {location}
-            </div>
-          </div>
-        </div>
-
-        {/* Decision badge */}
+        {/* School name — the hero */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginTop: 48,
+            fontSize: 52,
+            fontWeight: 700,
+            lineHeight: 1.05,
+            letterSpacing: "-0.03em",
+          }}
+        >
+          {data.schoolName.toUpperCase()}
+        </div>
+
+        {/* Location */}
+        <div
+          style={{
+            display: "flex",
+            fontSize: 22,
+            color: "#94a3b8",
+            marginTop: 12,
+          }}
+        >
+          {location}
+        </div>
+
+        {/* Decision badge — large and prominent */}
+        <div
+          style={{
+            display: "flex",
+            marginTop: 36,
           }}
         >
           <div
@@ -182,10 +124,10 @@ function OgCard({ data, colors, logoUrl, location }: CardVariantProps) {
               justifyContent: "center",
               backgroundColor: colors.badge,
               color: colors.badgeText,
-              fontSize: 28,
+              fontSize: 32,
               fontWeight: 700,
               borderRadius: 14,
-              padding: "18px 48px",
+              padding: "16px 44px",
               letterSpacing: "0.06em",
             }}
           >
@@ -193,47 +135,29 @@ function OgCard({ data, colors, logoUrl, location }: CardVariantProps) {
           </div>
         </div>
 
-        {/* Major + Cycle */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            marginTop: 28,
-            gap: 8,
-          }}
-        >
-          {data.intendedMajor && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 22,
-                color: "#cbd5e1",
-              }}
-            >
-              {data.intendedMajor}
-            </div>
-          )}
+        {/* Details line */}
+        {detailLine && (
           <div
             style={{
               display: "flex",
-              fontSize: 18,
-              color: "#64748b",
+              fontSize: 20,
+              color: "#94a3b8",
+              marginTop: 24,
             }}
           >
-            {data.admissionCycle}
+            {detailLine}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Footer — subtle watermark, not the focus */}
+      {/* Footer — subtle watermark */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-end",
-          padding: "0 56px",
-          height: 52,
+          padding: "0 64px",
+          height: 48,
         }}
       >
         <div style={{ display: "flex", fontSize: 15, color: "#475569" }}>
@@ -246,7 +170,10 @@ function OgCard({ data, colors, logoUrl, location }: CardVariantProps) {
 
 // --- Story Card (1080x1920) ---
 
-function StoryCard({ data, colors, logoUrl, location }: CardVariantProps) {
+function StoryCard({ data, colors, location }: CardVariantProps) {
+  const detailParts = [data.intendedMajor, data.admissionCycle].filter(Boolean);
+  const detailLine = detailParts.join(" · ");
+
   return (
     <div
       style={{
@@ -268,88 +195,45 @@ function StoryCard({ data, colors, logoUrl, location }: CardVariantProps) {
         }}
       />
 
-      {/* Main content — centered, all about the student */}
+      {/* Main content — vertically centered */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           flex: 1,
-          padding: "120px 64px 0 64px",
+          padding: "0 72px",
           alignItems: "center",
+          justifyContent: "center",
           textAlign: "center" as const,
         }}
       >
-        {/* School logo — big and prominent */}
+        {/* School name — massive hero text */}
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            fontSize: 72,
+            fontWeight: 700,
+            lineHeight: 1.0,
+            letterSpacing: "-0.03em",
+            textAlign: "center" as const,
           }}
         >
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logoUrl}
-              alt=""
-              width={120}
-              height={120}
-              style={{ borderRadius: 28, backgroundColor: "#1e293b" }}
-            />
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 120,
-                height: 120,
-                borderRadius: 28,
-                backgroundColor: "#1e293b",
-                fontSize: 60,
-                fontWeight: 700,
-                color: "#a78bfa",
-              }}
-            >
-              {data.schoolName.charAt(0)}
-            </div>
-          )}
+          {data.schoolName.toUpperCase()}
         </div>
 
-        {/* School name + location */}
+        {/* Location */}
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            marginTop: 40,
+            fontSize: 28,
+            color: "#94a3b8",
+            marginTop: 20,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              fontSize: 52,
-              fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: "-0.02em",
-              textAlign: "center" as const,
-            }}
-          >
-            {data.schoolName.toUpperCase()}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 24,
-              color: "#94a3b8",
-              marginTop: 16,
-            }}
-          >
-            {location}
-          </div>
+          {location}
         </div>
 
-        {/* Decision badge */}
+        {/* Decision badge — big */}
         <div
           style={{
             display: "flex",
@@ -357,42 +241,30 @@ function StoryCard({ data, colors, logoUrl, location }: CardVariantProps) {
             justifyContent: "center",
             backgroundColor: colors.badge,
             color: colors.badgeText,
-            fontSize: 36,
+            fontSize: 44,
             fontWeight: 700,
-            borderRadius: 16,
-            padding: "24px 56px",
+            borderRadius: 20,
+            padding: "28px 64px",
             letterSpacing: "0.08em",
-            marginTop: 80,
+            marginTop: 64,
           }}
         >
           {colors.label.toUpperCase()}
         </div>
 
-        {/* Major */}
-        {data.intendedMajor && (
+        {/* Details line */}
+        {detailLine && (
           <div
             style={{
               display: "flex",
-              fontSize: 24,
-              color: "#cbd5e1",
-              marginTop: 40,
+              fontSize: 26,
+              color: "#94a3b8",
+              marginTop: 36,
             }}
           >
-            {data.intendedMajor}
+            {detailLine}
           </div>
         )}
-
-        {/* Cycle */}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 20,
-            color: "#64748b",
-            marginTop: 12,
-          }}
-        >
-          {data.admissionCycle}
-        </div>
       </div>
 
       {/* Footer — subtle watermark */}
@@ -401,7 +273,7 @@ function StoryCard({ data, colors, logoUrl, location }: CardVariantProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "0 64px 60px 64px",
+          padding: "0 72px 60px 72px",
         }}
       >
         <div style={{ display: "flex", fontSize: 18, color: "#475569" }}>

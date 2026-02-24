@@ -1,4 +1,4 @@
-import { eq, and, ilike, gte, lte, sql, desc, or } from "drizzle-orm";
+import { eq, and, ilike, gte, lte, sql, desc, or, inArray } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/db";
 import { admissionSubmissions, schools } from "@/lib/db/schema";
@@ -343,4 +343,77 @@ export const getVisibleSubmissionById = (submissionId: string) =>
     () => fetchVisibleSubmissionById(submissionId),
     [`submission-card-${submissionId}`],
     { revalidate: 1800, tags: [`submission-card-${submissionId}`] }
+  )();
+
+// ─── Multi-school aggregate stats (for hub pages) ──────────────────────────
+
+async function fetchSubmissionStatsForSchools(schoolIds: string[]) {
+  if (schoolIds.length === 0) {
+    return {
+      totalCount: 0,
+      acceptedCount: 0,
+      rejectedCount: 0,
+      waitlistedCount: 0,
+      deferredCount: 0,
+      avgGpaUnweighted: null as number | null,
+      avgSatScore: null as number | null,
+    };
+  }
+
+  const db = getDb();
+  const [stats] = await db
+    .select({
+      totalCount: sql<number>`count(*)::int`,
+      acceptedCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'accepted' then 1 end)::int`,
+      rejectedCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'rejected' then 1 end)::int`,
+      waitlistedCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'waitlisted' then 1 end)::int`,
+      deferredCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'deferred' then 1 end)::int`,
+      avgGpaUnweighted: sql<number>`round(avg(${admissionSubmissions.gpaUnweighted}::numeric), 2)`,
+      avgSatScore: sql<number>`round(avg(${admissionSubmissions.satScore}))`,
+    })
+    .from(admissionSubmissions)
+    .where(
+      and(
+        inArray(admissionSubmissions.schoolId, schoolIds),
+        visibleSubmissionCondition()
+      )
+    );
+
+  return stats;
+}
+
+export const getSubmissionStatsForSchools = (schoolIds: string[], cacheKey: string) =>
+  unstable_cache(
+    () => fetchSubmissionStatsForSchools(schoolIds),
+    [`multi-school-stats-${cacheKey}`],
+    { revalidate: 1800, tags: ["multi-school-stats"] }
+  )();
+
+async function fetchPerSchoolSubmissionStats(schoolIds: string[]) {
+  if (schoolIds.length === 0) return [];
+
+  const db = getDb();
+  return db
+    .select({
+      schoolId: admissionSubmissions.schoolId,
+      totalCount: sql<number>`count(*)::int`,
+      acceptedCount: sql<number>`count(case when ${admissionSubmissions.decision} = 'accepted' then 1 end)::int`,
+      avgGpaUnweighted: sql<number>`round(avg(${admissionSubmissions.gpaUnweighted}::numeric), 2)`,
+      avgSatScore: sql<number>`round(avg(${admissionSubmissions.satScore}))`,
+    })
+    .from(admissionSubmissions)
+    .where(
+      and(
+        inArray(admissionSubmissions.schoolId, schoolIds),
+        visibleSubmissionCondition()
+      )
+    )
+    .groupBy(admissionSubmissions.schoolId);
+}
+
+export const getPerSchoolSubmissionStats = (schoolIds: string[], cacheKey: string) =>
+  unstable_cache(
+    () => fetchPerSchoolSubmissionStats(schoolIds),
+    [`per-school-stats-${cacheKey}`],
+    { revalidate: 1800, tags: ["per-school-stats"] }
   )();

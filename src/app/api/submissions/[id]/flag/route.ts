@@ -82,7 +82,7 @@ export const POST = createApiHandler(
       });
 
       // Revalidate caches so flagged submissions are hidden from listings
-      revalidateTag("chances-profiles");
+      revalidateTag("chances-profiles", { expire: 0 });
 
       return NextResponse.json(
         { flagCount: result.flagCount, status: result.submissionStatus },

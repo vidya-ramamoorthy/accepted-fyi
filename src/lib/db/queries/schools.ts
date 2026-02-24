@@ -350,3 +350,21 @@ export const getSchoolsByStateAndAcceptanceRate = (
       ],
     }
   )();
+
+// ─── Name pattern query (for hub pages) ────────────────────────────────────
+
+async function fetchSchoolsByNamePattern(pattern: string) {
+  const db = getDb();
+  return db
+    .select(SCHOOL_CARD_SELECT)
+    .from(schools)
+    .where(ilike(schools.name, pattern))
+    .orderBy(schools.name);
+}
+
+export const getSchoolsByNamePattern = (pattern: string, cacheKey: string) =>
+  unstable_cache(
+    () => fetchSchoolsByNamePattern(pattern),
+    [`schools-pattern-${cacheKey}`],
+    { revalidate: 3600, tags: ["schools-pattern"] }
+  )();

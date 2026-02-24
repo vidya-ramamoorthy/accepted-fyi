@@ -12,7 +12,10 @@ export default function ShareCardButton({ submissionId, schoolName }: ShareCardB
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "shared">("idle");
 
-  const cardPageUrl = `${window.location.origin}/card/${submissionId}`;
+  const getCardPageUrl = useCallback(
+    () => `${window.location.origin}/card/${submissionId}`,
+    [submissionId]
+  );
 
   const downloadCard = useCallback(
     async (size: "og" | "story") => {
@@ -39,6 +42,12 @@ export default function ShareCardButton({ submissionId, schoolName }: ShareCardB
     [submissionId, schoolName]
   );
 
+  const copyToClipboard = useCallback(async () => {
+    await navigator.clipboard.writeText(getCardPageUrl());
+    setShareStatus("copied");
+    setTimeout(() => setShareStatus("idle"), 2000);
+  }, [getCardPageUrl]);
+
   const shareCard = useCallback(async () => {
     if (typeof navigator.share !== "undefined") {
       try {
@@ -51,7 +60,7 @@ export default function ShareCardButton({ submissionId, schoolName }: ShareCardB
         await navigator.share({
           title: `My admission result — ${schoolName}`,
           text: `Check out my admission result for ${schoolName} on accepted.fyi`,
-          url: cardPageUrl,
+          url: getCardPageUrl(),
           files: [file],
         });
         setShareStatus("shared");
@@ -63,13 +72,7 @@ export default function ShareCardButton({ submissionId, schoolName }: ShareCardB
     } else {
       await copyToClipboard();
     }
-  }, [submissionId, schoolName, cardPageUrl]);
-
-  const copyToClipboard = useCallback(async () => {
-    await navigator.clipboard.writeText(cardPageUrl);
-    setShareStatus("copied");
-    setTimeout(() => setShareStatus("idle"), 2000);
-  }, [cardPageUrl]);
+  }, [submissionId, schoolName, getCardPageUrl, copyToClipboard]);
 
   return (
     <div className="flex items-center gap-2">
