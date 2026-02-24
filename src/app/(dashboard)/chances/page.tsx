@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { US_STATES } from "@/lib/constants/us-states";
+import MajorAutocomplete from "@/components/MajorAutocomplete";
 import Link from "next/link";
 import type {
   ChancesResponse,
@@ -236,12 +237,10 @@ export default function ChancesPage() {
                   Intended Major
                   <span className="ml-1 text-slate-500">(optional)</span>
                 </label>
-                <input
+                <MajorAutocomplete
                   id="intendedMajor"
-                  type="text"
                   value={intendedMajor}
-                  onChange={(event) => setIntendedMajor(event.target.value)}
-                  placeholder="e.g., Computer Science"
+                  onSelect={(major) => setIntendedMajor(major)}
                   className={inputClassName}
                 />
               </div>

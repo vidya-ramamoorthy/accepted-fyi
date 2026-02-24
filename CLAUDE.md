@@ -257,6 +257,27 @@
 
 ### Phase 1: Verification & PII Safety
 
+#### .edu Email Verification (Silver Tier) — TRIGGER: 500 users OR September 2026
+> **Status:** Planned. Build when the platform reaches 500 registered users OR when the Class of 2030 starts receiving .edu emails (Aug/Sep 2026), whichever comes first.
+
+- User clicks "Verify with .edu email" on their submission
+- Enters their school .edu address (e.g., `jdoe@stanford.edu`)
+- System sends a verification link with a time-limited token
+- User clicks link → submission upgrades from Bronze → Silver
+- **Implementation:** Supabase email (free tier) or Resend. Token stored in `verification_records` table. Rate limit: 3 verification emails/hour per user.
+- **Why wait:** Most early users submit during decision season (March) before they have .edu emails. Students don't get .edu accounts until fall enrollment.
+- **Schema ready:** `eduEmail` and `eduEmailVerified` fields already exist on user profiles.
+
+#### Email Digests (Weekly) — TRIGGER: 500 users AND steady weekly submission flow
+> **Status:** Planned. Build when the platform reaches 500 active users with consistent weekly submissions (target: April-May 2026 if March launch goes well).
+
+- Weekly email summarizing new submissions for schools on the user's watchlist
+- Requires a "watchlist" feature first — users pick schools they want to track
+- Content: new submission counts per watched school, platform-wide stats, notable data points
+- **Implementation:** Resend or SendGrid (free tier). Cron job via Vercel Cron or Supabase pg_cron. SPF/DKIM/DMARC setup on accepted.fyi domain for deliverability.
+- **Why it matters:** Drives retention (students visit once in March and never return), engagement metric for YC (email click = WAU), parent hook (parents track school data obsessively).
+- **Build order:** Watchlist feature → email service setup → digest template → cron scheduler.
+
 #### Document Verification (Gold Tier) — PAUSED until 5,000 users
 > **Status:** Paused. Will revisit when the platform reaches 5,000 registered users. The current focus is on data ingestion, engagement features (Chances Calculator), and SEO growth.
 

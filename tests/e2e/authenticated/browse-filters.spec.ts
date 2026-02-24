@@ -3,6 +3,10 @@ import { test, expect } from "../fixtures/base.fixture";
 /**
  * Tests for SubmissionFilters interactions on the /browse page (authenticated).
  * Each filter field is tested for URL param updates and result changes.
+ *
+ * Note: School, State, and Major inputs now have autocomplete dropdowns.
+ * After filling these fields, we press Escape to close the dropdown before
+ * clicking "Apply Filters", since the dropdown can intercept button clicks.
  */
 
 test.describe("Browse page — filter interactions", () => {
@@ -14,6 +18,7 @@ test.describe("Browse page — filter interactions", () => {
 
   test("school search filter updates URL after Apply", async ({ page }) => {
     await page.getByLabel("School").fill("Stanford");
+    await page.getByLabel("School").press("Escape");
     await page.getByRole("button", { name: "Apply Filters" }).click();
 
     await expect(page).toHaveURL(/school=Stanford/);
@@ -35,6 +40,7 @@ test.describe("Browse page — filter interactions", () => {
 
   test("state filter updates URL after Apply", async ({ page }) => {
     await page.getByLabel("State").fill("CA");
+    await page.getByLabel("State").press("Escape");
     await page.getByRole("button", { name: "Apply Filters" }).click();
 
     await expect(page).toHaveURL(/state=CA/);
@@ -42,6 +48,7 @@ test.describe("Browse page — filter interactions", () => {
 
   test("major filter updates URL after Apply", async ({ page }) => {
     await page.getByLabel("Major").fill("Computer Science");
+    await page.getByLabel("Major").press("Escape");
     await page.getByRole("button", { name: "Apply Filters" }).click();
 
     await expect(page).toHaveURL(/major=Computer/);
@@ -56,6 +63,7 @@ test.describe("Browse page — filter interactions", () => {
 
   test("Enter key in school input applies filters", async ({ page }) => {
     await page.getByLabel("School").fill("MIT");
+    await page.getByLabel("School").press("Escape");
     await page.getByLabel("School").press("Enter");
 
     await expect(page).toHaveURL(/school=MIT/);
@@ -63,6 +71,7 @@ test.describe("Browse page — filter interactions", () => {
 
   test("Enter key in state input applies filters", async ({ page }) => {
     await page.getByLabel("State").fill("NY");
+    await page.getByLabel("State").press("Escape");
     await page.getByLabel("State").press("Enter");
 
     await expect(page).toHaveURL(/state=NY/);
@@ -70,6 +79,7 @@ test.describe("Browse page — filter interactions", () => {
 
   test("Enter key in major input applies filters", async ({ page }) => {
     await page.getByLabel("Major").fill("Biology");
+    await page.getByLabel("Major").press("Escape");
     await page.getByLabel("Major").press("Enter");
 
     await expect(page).toHaveURL(/major=Biology/);
@@ -77,6 +87,7 @@ test.describe("Browse page — filter interactions", () => {
 
   test("multiple filters combine in URL", async ({ page }) => {
     await page.getByLabel("School").fill("UCLA");
+    await page.getByLabel("School").press("Escape");
     await page.getByLabel("Decision").selectOption("accepted");
     await page.getByLabel("Cycle").selectOption("2025-2026");
     await page.getByRole("button", { name: "Apply Filters" }).click();
@@ -89,6 +100,7 @@ test.describe("Browse page — filter interactions", () => {
   test("Clear all button removes all filters and resets URL", async ({ page }) => {
     // Apply some filters first
     await page.getByLabel("School").fill("Harvard");
+    await page.getByLabel("School").press("Escape");
     await page.getByLabel("Decision").selectOption("rejected");
     await page.getByRole("button", { name: "Apply Filters" }).click();
     await expect(page).toHaveURL(/school=Harvard/);
@@ -112,6 +124,7 @@ test.describe("Browse page — filter interactions", () => {
 
   test("non-matching school filter shows empty state", async ({ page }) => {
     await page.getByLabel("School").fill("zzz-no-match-999");
+    await page.getByLabel("School").press("Escape");
     await page.getByRole("button", { name: "Apply Filters" }).click();
 
     await expect(page.getByText(/no submissions match your filters/i)).toBeVisible();
@@ -140,10 +153,10 @@ test.describe("Browse page — filter interactions", () => {
     expect(stateValue).toBe("CA");
   });
 
-  test("state input enforces 2 character max", async ({ page }) => {
+  test("state input accepts full state names for autocomplete search", async ({ page }) => {
     await page.getByLabel("State").fill("CALIFORNIA");
     const stateValue = await page.getByLabel("State").inputValue();
-    expect(stateValue.length).toBeLessThanOrEqual(2);
+    expect(stateValue).toBe("CALIFORNIA");
   });
 
   test("filter results update the result count", async ({ page }) => {

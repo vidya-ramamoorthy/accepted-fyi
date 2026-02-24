@@ -14,11 +14,11 @@ export default function ExpandableExtracurriculars({ extracurriculars }: Expanda
   const visibleItems = isExpanded ? extracurriculars : extracurriculars.slice(0, VISIBLE_COUNT);
 
   return (
-    <div className="mt-4 flex flex-wrap gap-2">
+    <div className="mt-4 flex flex-wrap gap-2.5">
       {visibleItems.map((ec, index) => (
         <span
           key={index}
-          className="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400"
+          className="inline-flex rounded-full bg-slate-800 px-4 py-2 text-sm text-slate-400"
         >
           {ec}
         </span>
@@ -27,7 +27,7 @@ export default function ExpandableExtracurriculars({ extracurriculars }: Expanda
         <button
           type="button"
           onClick={() => setIsExpanded(true)}
-          className="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-300"
+          className="inline-flex rounded-full bg-slate-800 px-4 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-300"
         >
           +{extracurriculars.length - VISIBLE_COUNT} more
         </button>
@@ -36,7 +36,7 @@ export default function ExpandableExtracurriculars({ extracurriculars }: Expanda
         <button
           type="button"
           onClick={() => setIsExpanded(false)}
-          className="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-300"
+          className="inline-flex rounded-full bg-slate-800 px-4 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-300"
         >
           Show less
         </button>

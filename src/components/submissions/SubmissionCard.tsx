@@ -132,17 +132,17 @@ export default function SubmissionCard({
   }
 
   return (
-    <div className="rounded-xl border border-white/5 bg-slate-900/50 p-7 sm:p-8 transition-shadow hover:shadow-lg hover:shadow-violet-500/5">
+    <div className="rounded-xl border border-white/5 bg-slate-900/50 p-6 transition-shadow hover:shadow-lg hover:shadow-violet-500/5">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-xl font-semibold text-white">{schoolName}</h3>
-          <p className="mt-1.5 text-base text-slate-500">
+          <h3 className="text-lg font-semibold text-white">{schoolName}</h3>
+          <p className="mt-1 text-sm text-slate-500">
             {schoolState} &middot; {admissionCycle} &middot; {ROUND_LABELS[applicationRound] ?? applicationRound}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <span
-            className={`inline-flex rounded-full px-5 py-2 text-base font-medium ${decisionStyle.background} ${decisionStyle.text}`}
+            className={`inline-flex rounded-full px-4 py-1.5 text-sm font-medium ${decisionStyle.background} ${decisionStyle.text}`}
           >
             {decisionStyle.label}
           </span>
@@ -154,7 +154,7 @@ export default function SubmissionCard({
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {gpaUnweighted && (
           <StatItem label="GPA (UW)" value={gpaUnweighted} />
         )}
@@ -170,7 +170,7 @@ export default function SubmissionCard({
       </div>
 
       {intendedMajor && (
-        <p className="mt-5 text-base text-slate-400">
+        <p className="mt-4 text-sm text-slate-400">
           <span className="font-medium text-slate-300">Major:</span> {intendedMajor}
         </p>
       )}
@@ -180,7 +180,7 @@ export default function SubmissionCard({
           {contextTags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex rounded-full border border-violet-500/20 bg-violet-500/5 px-3.5 py-1.5 text-sm font-medium text-violet-300"
+              className="inline-flex rounded-full border border-violet-500/20 bg-violet-500/5 px-3 py-1 text-xs font-medium text-violet-300"
             >
               {tag}
             </span>
@@ -189,13 +189,13 @@ export default function SubmissionCard({
       )}
 
       {scholarshipOffered && scholarshipOffered !== "none" && SCHOLARSHIP_LABELS[scholarshipOffered] && (
-        <p className="mt-3 text-base font-medium text-emerald-400">
+        <p className="mt-3 text-sm font-medium text-emerald-400">
           {SCHOLARSHIP_LABELS[scholarshipOffered]}
         </p>
       )}
 
       {willAttend && (
-        <p className="mt-2 text-base text-slate-500">
+        <p className="mt-2 text-sm text-slate-500">
           Attending: {willAttend === "yes" ? "Yes" : willAttend === "no" ? "No" : "Undecided"}
         </p>
       )}
@@ -230,8 +230,8 @@ export default function SubmissionCard({
 function StatItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="text-lg font-semibold text-white">{value}</p>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-base font-semibold text-white">{value}</p>
     </div>
   );
 }

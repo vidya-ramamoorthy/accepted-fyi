@@ -121,6 +121,7 @@ test.describe("Chances calculator — per-field interactions", () => {
     await page.getByLabel(/act score/i).fill("33");
     await page.getByLabel(/state of residence/i).selectOption("TX");
     await page.getByLabel(/intended major/i).fill("Engineering");
+    await page.getByLabel(/intended major/i).press("Escape");
     await page.getByLabel(/cycle year/i).selectOption("2024-2025");
     await page.getByLabel(/ap\/ib courses/i).fill("10");
 

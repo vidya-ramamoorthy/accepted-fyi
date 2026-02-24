@@ -2,6 +2,9 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
+import SchoolAutocomplete from "@/components/SchoolAutocomplete";
+import StateAutocomplete from "@/components/submissions/StateAutocomplete";
+import MajorAutocomplete from "@/components/MajorAutocomplete";
 
 const DECISION_OPTIONS = [
   { value: "", label: "All Decisions" },
@@ -70,12 +73,11 @@ export default function SubmissionFilters() {
           <label htmlFor="school-filter" className="block text-xs font-medium text-slate-500">
             School
           </label>
-          <input
+          <SchoolAutocomplete
             id="school-filter"
-            type="text"
             value={schoolSearch}
-            onChange={(event) => setSchoolSearch(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && applyFilters()}
+            onSelect={(schoolName) => setSchoolSearch(schoolName)}
+            onEnter={applyFilters}
             placeholder="Search schools..."
             className={filterInputClassName}
           />
@@ -121,14 +123,11 @@ export default function SubmissionFilters() {
           <label htmlFor="state-filter" className="block text-xs font-medium text-slate-500">
             State
           </label>
-          <input
+          <StateAutocomplete
             id="state-filter"
-            type="text"
             value={stateFilter}
-            onChange={(event) => setStateFilter(event.target.value.toUpperCase())}
-            onKeyDown={(event) => event.key === "Enter" && applyFilters()}
-            maxLength={2}
-            placeholder="e.g., CA"
+            onSelect={(abbreviation) => setStateFilter(abbreviation)}
+            onEnter={applyFilters}
             className={`${filterInputClassName} uppercase`}
           />
         </div>
@@ -137,13 +136,11 @@ export default function SubmissionFilters() {
           <label htmlFor="major-filter" className="block text-xs font-medium text-slate-500">
             Major
           </label>
-          <input
+          <MajorAutocomplete
             id="major-filter"
-            type="text"
             value={majorSearch}
-            onChange={(event) => setMajorSearch(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && applyFilters()}
-            placeholder="e.g., Computer Science"
+            onSelect={(major) => setMajorSearch(major)}
+            onEnter={applyFilters}
             className={filterInputClassName}
           />
         </div>

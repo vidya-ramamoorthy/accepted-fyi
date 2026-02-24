@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import SchoolAutocomplete from "@/components/SchoolAutocomplete";
+import StateAutocomplete from "@/components/submissions/StateAutocomplete";
+import MajorAutocomplete from "@/components/MajorAutocomplete";
 import ShareCardButton from "@/components/cards/ShareCardButton";
 import type { AdmissionDecision } from "@/types/database";
 
@@ -278,14 +280,10 @@ export default function SubmitPage() {
               <label htmlFor="stateOfResidence" className="block text-sm font-medium text-slate-300">
                 State of Residence
               </label>
-              <input
+              <StateAutocomplete
                 id="stateOfResidence"
-                type="text"
-                required
-                maxLength={2}
                 value={stateOfResidence}
-                onChange={(event) => setStateOfResidence(event.target.value.toUpperCase())}
-                placeholder="e.g., CA"
+                onSelect={(abbreviation) => setStateOfResidence(abbreviation)}
                 className={`${inputClassName} uppercase`}
               />
             </div>
@@ -355,12 +353,10 @@ export default function SubmitPage() {
               <label htmlFor="intendedMajor" className="block text-sm font-medium text-slate-300">
                 Intended Major
               </label>
-              <input
+              <MajorAutocomplete
                 id="intendedMajor"
-                type="text"
                 value={intendedMajor}
-                onChange={(event) => setIntendedMajor(event.target.value)}
-                placeholder="e.g., Computer Science"
+                onSelect={(major) => setIntendedMajor(major)}
                 className={inputClassName}
               />
             </div>

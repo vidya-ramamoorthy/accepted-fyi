@@ -14,16 +14,20 @@ interface SchoolResult {
 interface SchoolAutocompleteProps {
   value: string;
   onSelect: (schoolName: string, schoolState?: string, schoolCity?: string) => void;
+  onEnter?: () => void;
   id?: string;
   className?: string;
+  placeholder?: string;
   required?: boolean;
 }
 
 export default function SchoolAutocomplete({
   value,
   onSelect,
+  onEnter,
   id,
   className,
+  placeholder = "Start typing a school name...",
   required,
 }: SchoolAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<SchoolResult[]>([]);
@@ -109,28 +113,32 @@ export default function SchoolAutocomplete({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      setIsOpen(false);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      if (isOpen && highlightedIndex >= 0 && suggestions[highlightedIndex]) {
+        event.preventDefault();
+        handleSelectSchool(suggestions[highlightedIndex]);
+      } else {
+        setIsOpen(false);
+        onEnter?.();
+      }
+      return;
+    }
+
     if (!isOpen || suggestions.length === 0) return;
 
-    switch (event.key) {
-      case "ArrowDown":
-        event.preventDefault();
-        setHighlightedIndex((previousIndex) =>
-          Math.min(previousIndex + 1, suggestions.length - 1)
-        );
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        setHighlightedIndex((previousIndex) => Math.max(previousIndex - 1, 0));
-        break;
-      case "Enter":
-        if (highlightedIndex >= 0) {
-          event.preventDefault();
-          handleSelectSchool(suggestions[highlightedIndex]);
-        }
-        break;
-      case "Escape":
-        setIsOpen(false);
-        break;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlightedIndex((previousIndex) =>
+        Math.min(previousIndex + 1, suggestions.length - 1)
+      );
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlightedIndex((previousIndex) => Math.max(previousIndex - 1, 0));
     }
   };
 
@@ -150,7 +158,7 @@ export default function SchoolAutocomplete({
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
-        placeholder="Start typing a school name..."
+        placeholder={placeholder}
         className={className}
         required={required}
         autoComplete="off"

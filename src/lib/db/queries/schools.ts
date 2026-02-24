@@ -1,8 +1,9 @@
-import { eq, ilike, sql, and, gte, lte, between, desc } from "drizzle-orm";
+import { eq, ilike, inArray, sql, and, gte, lte, between, desc } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/db";
 import { schools, admissionSubmissions } from "@/lib/db/schema";
 import { escapeLikePattern } from "@/lib/utils/escape-like";
+import { resolveSchoolAbbreviation } from "@/lib/constants/school-abbreviations";
 
 export async function findSchoolByName(schoolName: string) {
   const db = getDb();
@@ -154,6 +155,40 @@ export async function getSchoolBySlug(slug: string) {
 export async function searchSchools(query: string) {
   const db = getDb();
   const escapedQuery = escapeLikePattern(query);
+
+  // Check if the query matches any known abbreviation (e.g., "MIT", "UCLA", "CMU")
+  const abbreviationMatches = resolveSchoolAbbreviation(query);
+
+  if (abbreviationMatches.length > 0) {
+    // Combine: abbreviation-resolved schools first, then ILIKE name matches
+    const [abbreviationResults, nameResults] = await Promise.all([
+      db
+        .select()
+        .from(schools)
+        .where(inArray(schools.name, abbreviationMatches))
+        .orderBy(schools.name)
+        .limit(10),
+      db
+        .select()
+        .from(schools)
+        .where(ilike(schools.name, `%${escapedQuery}%`))
+        .orderBy(schools.name)
+        .limit(10),
+    ]);
+
+    // Deduplicate: abbreviation matches first, then name matches
+    const seenIds = new Set(abbreviationResults.map((school) => school.id));
+    const combinedResults = [...abbreviationResults];
+    for (const school of nameResults) {
+      if (!seenIds.has(school.id)) {
+        seenIds.add(school.id);
+        combinedResults.push(school);
+      }
+    }
+    return combinedResults.slice(0, 20);
+  }
+
+  // No abbreviation match — fall back to standard ILIKE search
   return db
     .select()
     .from(schools)

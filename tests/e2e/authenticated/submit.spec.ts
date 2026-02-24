@@ -82,10 +82,10 @@ test.describe("Submit page (authenticated)", () => {
   });
 
   test("honeypot field is hidden from view", async ({ page }) => {
-    // The honeypot input should exist in DOM but not be visible
+    // The honeypot input exists in DOM but is positioned off-screen (left: -9999px)
     const honeypotInput = page.locator("input#website");
     await expect(honeypotInput).toBeAttached();
-    await expect(honeypotInput).not.toBeVisible();
+    await expect(honeypotInput).not.toBeInViewport();
   });
 
   test("submit button is visible and enabled", async ({ page }) => {

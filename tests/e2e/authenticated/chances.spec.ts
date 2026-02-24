@@ -69,9 +69,9 @@ test.describe("Chances calculator page (authenticated)", () => {
     await page.getByLabel(/state of residence/i).selectOption("CA");
     await page.getByRole("button", { name: /calculate my chances/i }).click();
 
-    // Should show loading state
+    // Should show loading state (button says "Calculating..." and text says "Analyzing...")
     await expect(
-      page.getByText(/calculating|analyzing/i)
+      page.getByRole("button", { name: /calculating/i })
     ).toBeVisible();
 
     // Wait for results summary bar to appear

@@ -20,7 +20,7 @@ export default defineConfig({
     {
       name: "auth-setup",
       testMatch: /auth\.setup\.ts/,
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], channel: "chrome" },
     },
     {
       name: "public",
