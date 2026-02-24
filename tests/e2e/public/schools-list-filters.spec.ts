@@ -42,11 +42,11 @@ test.describe("Schools list page — filter interactions", () => {
     expect(page.url()).toMatch(/state=NY/i);
   });
 
-  test("clear link removes all filters and returns to unfiltered view", async ({ page }) => {
+  test("clear button removes all filters and returns to unfiltered view", async ({ page }) => {
     await page.goto("/schools?q=MIT&state=MA");
-    await expect(page.getByRole("link", { name: "Clear" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Clear" })).toBeVisible();
 
-    await page.getByRole("link", { name: "Clear" }).click();
+    await page.getByRole("button", { name: "Clear" }).click();
     await page.waitForURL("/schools");
 
     // URL should have no search params

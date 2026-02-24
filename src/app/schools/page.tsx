@@ -2,6 +2,7 @@ import { getSchoolsWithStats } from "@/lib/db/queries/schools";
 import Link from "next/link";
 import type { Metadata } from "next";
 import NavbarAuthSection from "@/components/NavbarAuthSection";
+import SchoolSearchForm from "@/components/schools/SchoolSearchForm";
 
 export const revalidate = 300;
 
@@ -74,37 +75,7 @@ export default async function SchoolsPage({ searchParams }: SchoolsPageProps) {
         </p>
 
         {/* Search & Filter */}
-        <form method="GET" action="/schools" className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <input
-            name="q"
-            type="text"
-            defaultValue={query}
-            placeholder="Search schools..."
-            className="flex-1 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-          />
-          <input
-            name="state"
-            type="text"
-            defaultValue={stateFilter}
-            maxLength={2}
-            placeholder="State (e.g., CA)"
-            className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-sm uppercase text-slate-200 placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 sm:w-28"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-violet-700"
-          >
-            Search
-          </button>
-          {(query || stateFilter) && (
-            <Link
-              href="/schools"
-              className="rounded-lg border border-slate-700 px-4 py-2.5 text-center text-sm text-slate-400 hover:text-white"
-            >
-              Clear
-            </Link>
-          )}
-        </form>
+        <SchoolSearchForm initialQuery={query} initialState={stateFilter} />
 
         {!dbAvailable || schools.length === 0 ? (
           <div className="mt-12 rounded-2xl border border-white/5 bg-slate-900/50 p-16 text-center">

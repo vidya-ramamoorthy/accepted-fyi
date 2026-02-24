@@ -32,13 +32,13 @@ test.describe("Schools list page", () => {
     await page.waitForURL(/state=CA/i);
   });
 
-  test("clear filters link appears when filters are active", async ({ page }) => {
+  test("clear button appears when filters are active", async ({ page }) => {
     await page.goto("/schools?q=Stanford");
-    await expect(page.getByRole("link", { name: "Clear" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Clear" })).toBeVisible();
   });
 
-  test("clear link is not visible with no filters", async ({ page }) => {
-    await expect(page.getByRole("link", { name: "Clear" })).not.toBeVisible();
+  test("clear button is not visible with no filters", async ({ page }) => {
+    await expect(page.getByRole("button", { name: "Clear" })).not.toBeVisible();
   });
 
   test("shows results or empty state", async ({ page }) => {
