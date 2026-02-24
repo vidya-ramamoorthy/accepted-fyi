@@ -79,8 +79,8 @@ export default async function HomePage() {
           </h1>
 
           <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-400">
-            Real admissions data from real students. Browse GPA, test scores,
-            extracurriculars, and outcomes — all crowdsourced and verified.
+            Students share their admission results here — GPAs, test scores,
+            decisions. Submit yours to see what everyone else got.
           </p>
 
           <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -88,7 +88,7 @@ export default async function HomePage() {
               href="/login"
               className="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-violet-600/25 transition-all hover:shadow-xl hover:shadow-violet-600/30 sm:w-auto"
             >
-              <span className="relative z-10">Share Your Results</span>
+              <span className="relative z-10">Submit Your Result &amp; See Others</span>
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-transform duration-300 group-hover:translate-x-0" />
             </Link>
             <Link
@@ -106,7 +106,7 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-5xl grid-cols-2 gap-px sm:grid-cols-4">
           <StatCounter label="Submissions" value={submissionCount > 0 ? submissionCount.toLocaleString() : "Growing"} />
           <StatCounter label="Schools Tracked" value={schoolCount > 0 ? schoolCount.toLocaleString() : "2,000+"} />
-          <StatCounter label="Data Fields" value="20+" />
+          <StatCounter label="Admission Cycles" value="6" />
           <StatCounter label="States Covered" value="50" />
         </div>
       </section>
@@ -129,13 +129,13 @@ export default async function HomePage() {
             />
             <StepCard
               step="02"
-              title="Submit your results"
-              description="Share your GPA, test scores, decision, and background. All data is anonymized."
+              title="Submit your admission result"
+              description="Add your school, decision, GPA, and test scores. Takes under 2 minutes. Everything is anonymized."
             />
             <StepCard
               step="03"
-              title="Browse all data"
-              description="Explore real outcomes. Contributing your results helps everyone make better decisions."
+              title="See what everyone else got"
+              description="Once you submit, you unlock thousands of real outcomes — GPAs, scores, decisions, and more — from students who applied to the same schools."
             />
           </div>
         </div>
@@ -145,13 +145,13 @@ export default async function HomePage() {
       <section className="px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <p className="text-center text-sm font-semibold uppercase tracking-widest text-violet-400">
-            Real data preview
+            Preview
           </p>
           <h2 className="mt-4 text-center text-3xl font-bold text-white sm:text-4xl">
-            Data that actually helps
+            Here&apos;s what you&apos;ll unlock
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-slate-400">
-            Go beyond acceptance rates. See the full picture for every applicant.
+            Real admission outcomes from real students. Submit yours to see the rest.
           </p>
 
           <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -197,13 +197,19 @@ export default async function HomePage() {
             />
           </div>
 
+          {/* Blurred hint row suggesting more data */}
+          <div className="mt-4 grid gap-4 md:grid-cols-2" aria-hidden="true">
+            <div className="h-48 rounded-2xl border border-white/5 bg-slate-900/50 blur-sm" />
+            <div className="h-48 rounded-2xl border border-white/5 bg-slate-900/50 blur-sm" />
+          </div>
+
           <div className="relative mt-4">
             <div className="absolute inset-0 z-10 flex items-center justify-center">
               <Link
                 href="/login"
                 className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/25 transition-all hover:shadow-xl hover:shadow-violet-600/30"
               >
-                Sign In to See Real Data
+                Submit Your Result to Unlock All Data
               </Link>
             </div>
             <div className="h-32 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
@@ -217,23 +223,50 @@ export default async function HomePage() {
           <div className="grid gap-6 md:grid-cols-3">
             <FeatureCard
               title="Filter by Everything"
-              description="School, GPA range, SAT/ACT, state, decision, application round, high school type, first-gen status, and more."
+              description="Search by school, GPA, SAT/ACT, state, major, round, decision — find students with profiles like yours."
               gradient="from-violet-500/10 to-purple-500/10"
               borderColor="border-violet-500/20"
             />
             <FeatureCard
-              title="Official + Community Data"
-              description="College Scorecard institutional data alongside crowdsourced individual outcomes. See the full picture for every school."
+              title="Official Stats + Real Outcomes"
+              description="College Scorecard data paired with crowdsourced results. See what the acceptance rate doesn't tell you."
               gradient="from-blue-500/10 to-cyan-500/10"
               borderColor="border-blue-500/20"
             />
             <FeatureCard
-              title="Completely Anonymous"
-              description="Your identity is never shown. Only aggregated stats and anonymized individual data points are visible."
+              title="100% Anonymous"
+              description="Your name is never shown. Only your stats. Help others while keeping your identity private."
               gradient="from-emerald-500/10 to-teal-500/10"
               borderColor="border-emerald-500/20"
             />
           </div>
+        </div>
+      </section>
+
+      {/* What students are asking */}
+      <section className="px-6 py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-bold text-white sm:text-4xl">
+            What students are asking
+          </h2>
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
+            {[
+              "What GPA do I need for UCLA?",
+              "Did anyone with a 1400 SAT get into Stanford?",
+              "How many waitlisted students at MIT got accepted?",
+              "What's the real acceptance rate for out-of-state applicants?",
+            ].map((question) => (
+              <span
+                key={question}
+                className="rounded-full border border-violet-500/20 bg-violet-500/5 px-5 py-2.5 text-sm text-violet-300"
+              >
+                {question}
+              </span>
+            ))}
+          </div>
+          <p className="mt-8 text-lg text-slate-400">
+            The answers are inside. Submit your result to find out.
+          </p>
         </div>
       </section>
 
@@ -244,20 +277,20 @@ export default async function HomePage() {
         </div>
         <div className="relative mx-auto max-w-2xl text-center">
           <h2 className="text-4xl font-bold text-white sm:text-5xl">
-            Stop guessing.{" "}
+            Decision season{" "}
             <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              Start knowing.
+              is here.
             </span>
           </h2>
           <p className="mt-6 text-lg text-slate-400">
-            Join students who are making data-driven college decisions.
-            Share your results. Help everyone decide.
+            Thousands of students are sharing results right now.
+            Submit yours and see how you compare.
           </p>
           <Link
             href="/login"
             className="mt-10 inline-block rounded-full bg-white px-10 py-4 text-sm font-semibold text-slate-900 shadow-lg shadow-white/10 transition-all hover:bg-slate-100 hover:shadow-xl hover:shadow-white/15"
           >
-            Get Started — It&apos;s Free
+            Submit Your Result — It&apos;s Free
           </Link>
         </div>
       </section>
@@ -269,7 +302,7 @@ export default async function HomePage() {
             accepted<span className="text-violet-500">.fyi</span>
           </span>
           <p className="text-sm text-slate-600">
-            Real college admissions data from real students
+            Real admission results from real students
           </p>
         </div>
       </footer>
