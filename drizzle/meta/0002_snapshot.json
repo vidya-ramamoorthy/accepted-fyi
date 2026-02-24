@@ -1,0 +1,1136 @@
+{
+  "id": "16a1e547-062c-4b3e-aa55-970cec3118bc",
+  "prevId": "d6568b97-43a2-448a-b5ae-19e5129a58c6",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.admission_submissions": {
+      "name": "admission_submissions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "school_id": {
+          "name": "school_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'user'"
+        },
+        "source_url": {
+          "name": "source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_post_id": {
+          "name": "source_post_id",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "admission_cycle": {
+          "name": "admission_cycle",
+          "type": "varchar(9)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decision": {
+          "name": "decision",
+          "type": "admission_decision",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gpa_unweighted": {
+          "name": "gpa_unweighted",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gpa_weighted": {
+          "name": "gpa_weighted",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sat_score": {
+          "name": "sat_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "act_score": {
+          "name": "act_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extracurriculars": {
+          "name": "extracurriculars",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "applicant_highlight": {
+          "name": "applicant_highlight",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "intended_major": {
+          "name": "intended_major",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "application_round": {
+          "name": "application_round",
+          "type": "application_round",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state_of_residence": {
+          "name": "state_of_residence",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "high_school_type": {
+          "name": "high_school_type",
+          "type": "high_school_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_generation": {
+          "name": "first_generation",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legacy_status": {
+          "name": "legacy_status",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "financial_aid_applied": {
+          "name": "financial_aid_applied",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geographic_classification": {
+          "name": "geographic_classification",
+          "type": "geographic_classification",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ap_courses_count": {
+          "name": "ap_courses_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ib_courses_count": {
+          "name": "ib_courses_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "honors_courses_count": {
+          "name": "honors_courses_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scholarship_offered": {
+          "name": "scholarship_offered",
+          "type": "scholarship_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "will_attend": {
+          "name": "will_attend",
+          "type": "attendance_intent",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waitlist_outcome": {
+          "name": "waitlist_outcome",
+          "type": "waitlist_outcome",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verification_tier": {
+          "name": "verification_tier",
+          "type": "verification_tier",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bronze'"
+        },
+        "submission_status": {
+          "name": "submission_status",
+          "type": "submission_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending_review'"
+        },
+        "flag_count": {
+          "name": "flag_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unique_user_school_cycle": {
+          "name": "unique_user_school_cycle",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "school_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "admission_cycle",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "user_id IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "unique_scraped_source_school": {
+          "name": "unique_scraped_source_school",
+          "columns": [
+            {
+              "expression": "source_post_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "school_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "user_id IS NULL AND source_post_id IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_submissions_school_id": {
+          "name": "idx_submissions_school_id",
+          "columns": [
+            {
+              "expression": "school_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_submissions_user_id": {
+          "name": "idx_submissions_user_id",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_submissions_decision": {
+          "name": "idx_submissions_decision",
+          "columns": [
+            {
+              "expression": "decision",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_submissions_status": {
+          "name": "idx_submissions_status",
+          "columns": [
+            {
+              "expression": "submission_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_submissions_created_at": {
+          "name": "idx_submissions_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_submissions_data_source": {
+          "name": "idx_submissions_data_source",
+          "columns": [
+            {
+              "expression": "data_source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "admission_submissions_user_id_user_profiles_id_fk": {
+          "name": "admission_submissions_user_id_user_profiles_id_fk",
+          "tableFrom": "admission_submissions",
+          "tableTo": "user_profiles",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "admission_submissions_school_id_schools_id_fk": {
+          "name": "admission_submissions_school_id_schools_id_fk",
+          "tableFrom": "admission_submissions",
+          "tableTo": "schools",
+          "columnsFrom": [
+            "school_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "user_submissions_require_user_id": {
+          "name": "user_submissions_require_user_id",
+          "value": "data_source = 'user' AND user_id IS NOT NULL OR data_source != 'user'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.decision_timelines": {
+      "name": "decision_timelines",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "school_id": {
+          "name": "school_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admission_cycle": {
+          "name": "admission_cycle",
+          "type": "varchar(9)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "application_round": {
+          "name": "application_round",
+          "type": "application_round",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expected_date": {
+          "name": "expected_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actual_date": {
+          "name": "actual_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_confirmed": {
+          "name": "is_confirmed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "decision_timelines_school_id_schools_id_fk": {
+          "name": "decision_timelines_school_id_schools_id_fk",
+          "tableFrom": "decision_timelines",
+          "tableTo": "schools",
+          "columnsFrom": [
+            "school_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.schools": {
+      "name": "schools",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city": {
+          "name": "city",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "school_type": {
+          "name": "school_type",
+          "type": "school_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "acceptance_rate": {
+          "name": "acceptance_rate",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scorecard_id": {
+          "name": "scorecard_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sat_average": {
+          "name": "sat_average",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sat_25th_percentile": {
+          "name": "sat_25th_percentile",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sat_75th_percentile": {
+          "name": "sat_75th_percentile",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "act_median": {
+          "name": "act_median",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "act_25th_percentile": {
+          "name": "act_25th_percentile",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "act_75th_percentile": {
+          "name": "act_75th_percentile",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "undergrad_enrollment": {
+          "name": "undergrad_enrollment",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "admissions_total": {
+          "name": "admissions_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applicants_total": {
+          "name": "applicants_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "institutional_data_year": {
+          "name": "institutional_data_year",
+          "type": "varchar(9)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ed_applicants": {
+          "name": "ed_applicants",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ed_admitted": {
+          "name": "ed_admitted",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ea_applicants": {
+          "name": "ea_applicants",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ea_admitted": {
+          "name": "ea_admitted",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waitlist_offered": {
+          "name": "waitlist_offered",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waitlist_accepted": {
+          "name": "waitlist_accepted",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waitlist_admitted": {
+          "name": "waitlist_admitted",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_gpa": {
+          "name": "factor_gpa",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_class_rank": {
+          "name": "factor_class_rank",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_test_scores": {
+          "name": "factor_test_scores",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_essay": {
+          "name": "factor_essay",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_recommendations": {
+          "name": "factor_recommendations",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_extracurriculars": {
+          "name": "factor_extracurriculars",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_talent_ability": {
+          "name": "factor_talent_ability",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_character": {
+          "name": "factor_character",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_first_gen": {
+          "name": "factor_first_gen",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_alumni_relation": {
+          "name": "factor_alumni_relation",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_geographic": {
+          "name": "factor_geographic",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_state_residency": {
+          "name": "factor_state_residency",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_volunteer": {
+          "name": "factor_volunteer",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_work_experience": {
+          "name": "factor_work_experience",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_demonstrated_interest": {
+          "name": "factor_demonstrated_interest",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gpa_percent_4_00": {
+          "name": "gpa_percent_4_00",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gpa_percent_3_75_to_3_99": {
+          "name": "gpa_percent_3_75_to_3_99",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gpa_percent_3_50_to_3_74": {
+          "name": "gpa_percent_3_50_to_3_74",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gpa_percent_3_25_to_3_49": {
+          "name": "gpa_percent_3_25_to_3_49",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gpa_percent_3_00_to_3_24": {
+          "name": "gpa_percent_3_00_to_3_24",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gpa_percent_below_3_00": {
+          "name": "gpa_percent_below_3_00",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "percent_need_met": {
+          "name": "percent_need_met",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_financial_aid_package": {
+          "name": "avg_financial_aid_package",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "percent_receiving_merit_aid": {
+          "name": "percent_receiving_merit_aid",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_merit_aid_amount": {
+          "name": "avg_merit_aid_amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cds_data_year": {
+          "name": "cds_data_year",
+          "type": "varchar(9)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cds_source_url": {
+          "name": "cds_source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "schools_slug_unique": {
+          "name": "schools_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.submission_flags": {
+      "name": "submission_flags",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "submission_id": {
+          "name": "submission_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "flagged_by_user_id": {
+          "name": "flagged_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "submission_flags_submission_id_admission_submissions_id_fk": {
+          "name": "submission_flags_submission_id_admission_submissions_id_fk",
+          "tableFrom": "submission_flags",
+          "tableTo": "admission_submissions",
+          "columnsFrom": [
+            "submission_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "submission_flags_flagged_by_user_id_user_profiles_id_fk": {
+          "name": "submission_flags_flagged_by_user_id_user_profiles_id_fk",
+          "tableFrom": "submission_flags",
+          "tableTo": "user_profiles",
+          "columnsFrom": [
+            "flagged_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_profiles": {
+      "name": "user_profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "auth_user_id": {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "has_submitted": {
+          "name": "has_submitted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "verification_tier": {
+          "name": "verification_tier",
+          "type": "verification_tier",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bronze'"
+        },
+        "edu_email": {
+          "name": "edu_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "edu_email_verified": {
+          "name": "edu_email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_profiles_auth_user_id_unique": {
+          "name": "user_profiles_auth_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "auth_user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.admission_decision": {
+      "name": "admission_decision",
+      "schema": "public",
+      "values": [
+        "accepted",
+        "rejected",
+        "waitlisted",
+        "deferred"
+      ]
+    },
+    "public.application_round": {
+      "name": "application_round",
+      "schema": "public",
+      "values": [
+        "early_decision",
+        "early_action",
+        "regular",
+        "rolling"
+      ]
+    },
+    "public.attendance_intent": {
+      "name": "attendance_intent",
+      "schema": "public",
+      "values": [
+        "yes",
+        "no",
+        "undecided"
+      ]
+    },
+    "public.data_source": {
+      "name": "data_source",
+      "schema": "public",
+      "values": [
+        "user",
+        "reddit",
+        "college_confidential",
+        "public_scraped"
+      ]
+    },
+    "public.geographic_classification": {
+      "name": "geographic_classification",
+      "schema": "public",
+      "values": [
+        "rural",
+        "suburban",
+        "urban"
+      ]
+    },
+    "public.high_school_type": {
+      "name": "high_school_type",
+      "schema": "public",
+      "values": [
+        "public",
+        "private",
+        "charter",
+        "magnet",
+        "homeschool",
+        "international"
+      ]
+    },
+    "public.scholarship_type": {
+      "name": "scholarship_type",
+      "schema": "public",
+      "values": [
+        "none",
+        "merit",
+        "need_based",
+        "both"
+      ]
+    },
+    "public.school_type": {
+      "name": "school_type",
+      "schema": "public",
+      "values": [
+        "public",
+        "private",
+        "community_college"
+      ]
+    },
+    "public.submission_status": {
+      "name": "submission_status",
+      "schema": "public",
+      "values": [
+        "pending_review",
+        "visible",
+        "hidden",
+        "flagged"
+      ]
+    },
+    "public.verification_tier": {
+      "name": "verification_tier",
+      "schema": "public",
+      "values": [
+        "bronze",
+        "silver",
+        "gold"
+      ]
+    },
+    "public.waitlist_outcome": {
+      "name": "waitlist_outcome",
+      "schema": "public",
+      "values": [
+        "accepted_off_waitlist",
+        "rejected_off_waitlist",
+        "withdrew"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

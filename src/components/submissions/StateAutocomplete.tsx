@@ -117,7 +117,7 @@ export default function StateAutocomplete({
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         maxLength={20}
-        placeholder="Search states..."
+        placeholder="e.g., California or CA"
         className={className}
         autoComplete="off"
         role="combobox"

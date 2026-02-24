@@ -94,6 +94,7 @@ export async function createSubmission(data: {
   intendedMajor: string | null;
   stateOfResidence: string;
   extracurriculars: string[];
+  applicantHighlight: string | null;
   highSchoolType: HighSchoolType | null;
   firstGeneration: boolean | null;
   legacyStatus: boolean | null;
@@ -123,6 +124,7 @@ export async function createSubmission(data: {
       intendedMajor: data.intendedMajor,
       stateOfResidence: data.stateOfResidence,
       extracurriculars: data.extracurriculars,
+      applicantHighlight: data.applicantHighlight,
       highSchoolType: data.highSchoolType,
       firstGeneration: data.firstGeneration,
       legacyStatus: data.legacyStatus,

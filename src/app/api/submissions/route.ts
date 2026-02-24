@@ -105,6 +105,7 @@ export const POST = createApiHandler(
         intendedMajor: data.intendedMajor,
         stateOfResidence: data.stateOfResidence,
         extracurriculars: data.extracurriculars,
+        applicantHighlight: data.applicantHighlight,
         highSchoolType: data.highSchoolType,
         firstGeneration: data.firstGeneration,
         legacyStatus: data.legacyStatus,

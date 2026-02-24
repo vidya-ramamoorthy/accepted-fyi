@@ -196,6 +196,7 @@ export const admissionSubmissions = pgTable(
     satScore: integer("sat_score"),
     actScore: integer("act_score"),
     extracurriculars: text("extracurriculars").array().notNull().default([]),
+    applicantHighlight: text("applicant_highlight"),
     intendedMajor: varchar("intended_major", { length: 100 }),
     applicationRound: applicationRoundEnum("application_round").notNull(),
     stateOfResidence: varchar("state_of_residence", { length: 2 }),

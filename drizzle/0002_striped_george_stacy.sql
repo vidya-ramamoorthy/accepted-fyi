@@ -1,0 +1,1 @@
+ALTER TABLE "admission_submissions" ADD COLUMN "applicant_highlight" text;

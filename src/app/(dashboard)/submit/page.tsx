@@ -82,6 +82,7 @@ export default function SubmitPage() {
   const [intendedMajor, setIntendedMajor] = useState("");
   const [stateOfResidence, setStateOfResidence] = useState("");
   const [extracurriculars, setExtracurriculars] = useState("");
+  const [applicantHighlight, setApplicantHighlight] = useState("");
   const [admissionCycle, setAdmissionCycle] = useState("2025-2026");
   const [highSchoolType, setHighSchoolType] = useState("");
   const [firstGeneration, setFirstGeneration] = useState<boolean | undefined>(undefined);
@@ -208,6 +209,7 @@ export default function SubmitPage() {
             .split(",")
             .map((ec) => ec.trim())
             .filter((ec) => ec.length > 0),
+          applicantHighlight: applicantHighlight || undefined,
           admissionCycle,
           highSchoolType: highSchoolType || undefined,
           firstGeneration,
@@ -692,6 +694,24 @@ export default function SubmitPage() {
                   placeholder="e.g., Debate Team Captain, Math Olympiad, Volunteer at Food Bank"
                   className={inputClassName}
                 />
+              </div>
+
+              <div>
+                <label htmlFor="applicantHighlight" className="block text-sm font-medium text-slate-300">
+                  What do you think set you apart?
+                </label>
+                <textarea
+                  id="applicantHighlight"
+                  rows={3}
+                  maxLength={500}
+                  value={applicantHighlight}
+                  onChange={(event) => setApplicantHighlight(event.target.value)}
+                  placeholder="e.g., Published research in computational biology, founded a nonprofit tutoring program, recruited athlete for tennis"
+                  className={inputClassName}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  What made your application unique? This helps others understand what factors may matter.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

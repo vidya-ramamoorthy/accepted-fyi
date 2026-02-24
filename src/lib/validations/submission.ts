@@ -72,6 +72,7 @@ export interface SubmissionInput {
   intendedMajor?: string;
   stateOfResidence: string;
   extracurriculars?: string[];
+  applicantHighlight?: string;
   highSchoolType?: string;
   firstGeneration?: boolean;
   legacyStatus?: boolean;
@@ -104,6 +105,7 @@ export interface ValidatedSubmission {
   intendedMajor: string | null;
   stateOfResidence: string;
   extracurriculars: string[];
+  applicantHighlight: string | null;
   highSchoolType: HighSchoolType | null;
   firstGeneration: boolean | null;
   legacyStatus: boolean | null;
@@ -189,9 +191,18 @@ export function validateSubmission(
     }
   }
 
+  const MAX_APPLICANT_HIGHLIGHT_LENGTH = 500;
   const MAX_EXTRACURRICULARS = 20;
   const MAX_EXTRACURRICULAR_LENGTH = 200;
   const MAX_INTENDED_MAJOR_LENGTH = 100;
+
+  const applicantHighlight = input.applicantHighlight?.trim() || null;
+  if (applicantHighlight && applicantHighlight.length > MAX_APPLICANT_HIGHLIGHT_LENGTH) {
+    errors.push({
+      field: "applicantHighlight",
+      message: `Highlight must be ${MAX_APPLICANT_HIGHLIGHT_LENGTH} characters or less`,
+    });
+  }
 
   const extracurriculars = (input.extracurriculars ?? [])
     .map((ec) => ec.trim())
@@ -313,6 +324,7 @@ export function validateSubmission(
       intendedMajor,
       stateOfResidence: stateOfResidence!,
       extracurriculars,
+      applicantHighlight,
       highSchoolType,
       firstGeneration,
       legacyStatus,
