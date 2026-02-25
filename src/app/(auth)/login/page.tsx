@@ -1,11 +1,25 @@
 "use client";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+
+const ERROR_MESSAGES: Record<string, string> = {
+  auth_failed: "Sign-in failed. Please try again.",
+  profile_setup_failed: "Account setup failed. Please try again or contact support.",
+};
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      setErrorMessage(ERROR_MESSAGES[errorParam] ?? "Something went wrong. Please try again.");
+    }
+  }, [searchParams]);
   const supabaseRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   const getSupabase = useCallback(() => {
