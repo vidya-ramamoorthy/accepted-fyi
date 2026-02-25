@@ -389,7 +389,7 @@ export default async function MITPage() {
                     highSchoolType={submission.highSchoolType}
                     firstGeneration={submission.firstGeneration}
                     legacyStatus={submission.legacyStatus}
-                    financialAidApplied={submission.financialAidApplied}
+
                     geographicClassification={submission.geographicClassification}
                     apCoursesCount={submission.apCoursesCount}
                     ibCoursesCount={submission.ibCoursesCount}

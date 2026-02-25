@@ -7,7 +7,10 @@ export async function GET(request: NextRequest) {
   try {
     if (searchQuery) {
       const results = await searchSchools(searchQuery);
-      return NextResponse.json({ schools: results });
+      return NextResponse.json(
+        { schools: results },
+        { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } }
+      );
     }
 
     // Public endpoint: returns school names and basic stats

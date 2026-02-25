@@ -24,6 +24,9 @@ export default function ShareCardButton({ submissionId, schoolName }: ShareCardB
       try {
         const sizeParam = size === "story" ? "?size=story" : "";
         const response = await fetch(`/api/og/card/${submissionId}${sizeParam}`);
+        if (!response.ok) {
+          throw new Error(`Download failed: ${response.status}`);
+        }
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
 
@@ -35,6 +38,8 @@ export default function ShareCardButton({ submissionId, schoolName }: ShareCardB
         anchor.click();
         document.body.removeChild(anchor);
         URL.revokeObjectURL(blobUrl);
+      } catch {
+        console.error("Failed to download card image");
       } finally {
         setIsDownloading(false);
       }

@@ -4,6 +4,8 @@ import { US_STATES } from "@/lib/constants/us-states";
 import { SAT_RANGES, ACT_RANGES, ACCEPTANCE_RATE_RANGES } from "@/lib/constants/score-ranges";
 import NavbarAuthSection from "@/components/NavbarAuthSection";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Browse Colleges by State, SAT Score, ACT Score & Acceptance Rate | accepted.fyi",
   description:

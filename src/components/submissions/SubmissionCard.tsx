@@ -70,7 +70,6 @@ interface SubmissionCardProps {
   highSchoolType: string | null;
   firstGeneration: boolean | null;
   legacyStatus: boolean | null;
-  financialAidApplied: boolean | null;
   geographicClassification: string | null;
   apCoursesCount: number | null;
   ibCoursesCount: number | null;

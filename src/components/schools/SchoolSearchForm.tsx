@@ -30,8 +30,11 @@ export default function SchoolSearchForm({ initialQuery = "", initialState = "" 
     navigateWithFilters(schoolQuery, stateFilter);
   }
 
-  function handleSchoolSelect(schoolName: string) {
+  function handleSchoolSelect(schoolName: string, schoolState?: string) {
     setSchoolQuery(schoolName);
+    if (schoolState) {
+      setStateFilter(schoolState);
+    }
   }
 
   function handleAutocompleteEnter() {

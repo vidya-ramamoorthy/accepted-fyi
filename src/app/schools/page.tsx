@@ -24,7 +24,7 @@ export default async function SchoolsPage({ searchParams }: SchoolsPageProps) {
   const resolvedParams = await searchParams;
   const query = resolvedParams.q;
   const stateFilter = resolvedParams.state;
-  const currentPage = resolvedParams.page ? parseInt(resolvedParams.page) : 1;
+  const currentPage = Math.max(1, parseInt(resolvedParams.page ?? "1", 10) || 1);
 
   let schoolsData: Awaited<ReturnType<typeof getSchoolsWithStats>> = {
     schools: [],

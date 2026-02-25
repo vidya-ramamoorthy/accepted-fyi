@@ -377,7 +377,7 @@ export default async function SchoolDetailPage({ params, searchParams }: SchoolD
                     highSchoolType={submission.highSchoolType}
                     firstGeneration={submission.firstGeneration}
                     legacyStatus={submission.legacyStatus}
-                    financialAidApplied={submission.financialAidApplied}
+
                     geographicClassification={submission.geographicClassification}
                     apCoursesCount={submission.apCoursesCount}
                     ibCoursesCount={submission.ibCoursesCount}

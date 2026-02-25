@@ -9,6 +9,7 @@ import { DECISION_DATES_2025_2026 } from "@/lib/constants/decision-dates";
 import SchoolCard from "@/components/schools/SchoolCard";
 import NavbarAuthSection from "@/components/NavbarAuthSection";
 import StatCard from "@/components/ui/StatCard";
+import CountdownBadge from "@/components/ui/CountdownBadge";
 
 export const revalidate = 3600;
 
@@ -45,14 +46,34 @@ export const metadata: Metadata = {
 };
 
 export default async function UCSchoolsPage() {
-  const ucSchools = await getSchoolsByNamePattern(UC_NAME_PATTERN, "uc-system");
+  let ucSchools: Awaited<ReturnType<typeof getSchoolsByNamePattern>> = [];
+  try {
+    ucSchools = await getSchoolsByNamePattern(UC_NAME_PATTERN, "uc-system");
+  } catch {
+    // DB unavailable — render with empty data
+  }
 
   const schoolIds = ucSchools.map((school) => school.id);
 
-  const [aggregateStats, perSchoolStats] = await Promise.all([
-    getSubmissionStatsForSchools(schoolIds, "uc-system"),
-    getPerSchoolSubmissionStats(schoolIds, "uc-system"),
-  ]);
+  let aggregateStats: Awaited<ReturnType<typeof getSubmissionStatsForSchools>> = {
+    totalCount: 0,
+    acceptedCount: 0,
+    rejectedCount: 0,
+    waitlistedCount: 0,
+    deferredCount: 0,
+    avgGpaUnweighted: null,
+    avgSatScore: null,
+  };
+  let perSchoolStats: Awaited<ReturnType<typeof getPerSchoolSubmissionStats>> = [];
+
+  try {
+    [aggregateStats, perSchoolStats] = await Promise.all([
+      getSubmissionStatsForSchools(schoolIds, "uc-system"),
+      getPerSchoolSubmissionStats(schoolIds, "uc-system"),
+    ]);
+  } catch {
+    // DB unavailable — render with empty stats
+  }
 
   const perSchoolStatsMap = new Map(
     perSchoolStats.map((stat) => [stat.schoolId, stat])
@@ -201,37 +222,19 @@ export default async function UCSchoolsPage() {
                   "University of California-",
                   "UC "
                 );
-                const now = new Date();
-                const isPast = releaseDate < now;
-                const daysRemaining = Math.ceil(
-                  (releaseDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-                );
 
                 return (
                   <div
                     key={`${entry.schoolName}-${entry.round}`}
-                    className={`rounded-xl border p-4 ${
-                      isPast
-                        ? "border-white/5 bg-slate-900/30"
-                        : "border-violet-500/20 bg-violet-500/5"
-                    }`}
+                    className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-white">
                         {campusShortName}
                       </span>
-                      {!isPast && daysRemaining > 0 && (
-                        <span className="text-xs text-violet-400">
-                          {daysRemaining}d away
-                        </span>
-                      )}
-                      {isPast && (
-                        <span className="text-xs text-slate-600">Released</span>
-                      )}
+                      <CountdownBadge targetDate={entry.expectedDate} />
                     </div>
-                    <p
-                      className={`mt-1 text-sm ${isPast ? "text-slate-500" : "text-slate-300"}`}
-                    >
+                    <p className="mt-1 text-sm text-slate-300">
                       {formattedDate}
                     </p>
                     {!entry.isConfirmed && (
