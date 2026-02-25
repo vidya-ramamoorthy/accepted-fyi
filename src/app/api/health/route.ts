@@ -43,7 +43,9 @@ async function checkDatabase(): Promise<HealthCheck> {
     return {
       status: "down",
       latencyMs: Math.round(performance.now() - startTime),
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: process.env.NODE_ENV === "production"
+        ? "unavailable"
+        : (error instanceof Error ? error.message : "Unknown error"),
     };
   }
 }
@@ -67,7 +69,9 @@ async function checkRedis(): Promise<HealthCheck> {
     return {
       status: "down",
       latencyMs: Math.round(performance.now() - startTime),
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: process.env.NODE_ENV === "production"
+        ? "unavailable"
+        : (error instanceof Error ? error.message : "Unknown error"),
     };
   }
 }

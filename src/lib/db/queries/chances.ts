@@ -13,6 +13,7 @@ import { sql, and, or, eq, lte, between, ilike } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/db";
 import { schools, admissionSubmissions } from "@/lib/db/schema";
+import { escapeLikePattern } from "@/lib/utils/escape-like";
 import type { SchoolData, SimilarProfileStats } from "@/lib/chances/types";
 
 // ─── School Data for Chances ──────────────────────────────────────────────────
@@ -159,10 +160,11 @@ async function fetchSimilarProfileStats(
     );
   }
 
-  // Filter by intended major (fuzzy match)
+  // Filter by intended major (fuzzy match, escape LIKE metacharacters)
   if (input.intendedMajor !== null) {
+    const escapedMajor = escapeLikePattern(input.intendedMajor);
     conditions.push(
-      ilike(admissionSubmissions.intendedMajor, `%${input.intendedMajor}%`)
+      ilike(admissionSubmissions.intendedMajor, `%${escapedMajor}%`)
     );
   }
 
