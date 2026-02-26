@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/index";
 import { getServerConfig } from "@/lib/config";
 import { Redis } from "@upstash/redis";
+import { createApiHandler, withIpRateLimit, withRequestLogging } from "@/lib/api-middleware";
+import { ipReadRateLimiter } from "@/lib/ratelimit";
 
 interface HealthCheck {
   status: "up" | "down" | "skipped";
@@ -10,25 +12,29 @@ interface HealthCheck {
   error?: string;
 }
 
-export async function GET() {
-  const databaseCheck = await checkDatabase();
-  const redisCheck = await checkRedis();
+export const GET = createApiHandler(
+  withRequestLogging(),
+  withIpRateLimit(ipReadRateLimiter),
+  async () => {
+    const databaseCheck = await checkDatabase();
+    const redisCheck = await checkRedis();
 
-  const isHealthy = databaseCheck.status === "up";
-  const statusCode = isHealthy ? 200 : 503;
+    const isHealthy = databaseCheck.status === "up";
+    const statusCode = isHealthy ? 200 : 503;
 
-  return NextResponse.json(
-    {
-      status: isHealthy ? "healthy" : "unhealthy",
-      timestamp: new Date().toISOString(),
-      checks: {
-        database: databaseCheck,
-        redis: redisCheck,
+    return NextResponse.json(
+      {
+        status: isHealthy ? "healthy" : "unhealthy",
+        timestamp: new Date().toISOString(),
+        checks: {
+          database: databaseCheck,
+          redis: redisCheck,
+        },
       },
-    },
-    { status: statusCode }
-  );
-}
+      { status: statusCode }
+    );
+  }
+);
 
 async function checkDatabase(): Promise<HealthCheck> {
   const startTime = performance.now();

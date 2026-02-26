@@ -1,5 +1,49 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// Mock next/server
+vi.mock("next/server", () => {
+  class MockNextRequest {
+    public headers: Map<string, string>;
+    public method: string;
+    public url: string;
+    public nextUrl: { pathname: string; searchParams: URLSearchParams };
+
+    constructor(url: string, options?: { method?: string; headers?: Record<string, string> }) {
+      this.url = url;
+      this.method = options?.method ?? "GET";
+      this.headers = new Map(Object.entries(options?.headers ?? {}));
+      const parsed = new URL(url);
+      this.nextUrl = { pathname: parsed.pathname, searchParams: parsed.searchParams };
+    }
+
+    async json() { throw new Error("No body"); }
+  }
+
+  return {
+    NextRequest: MockNextRequest,
+    NextResponse: {
+      json: (body: unknown, init?: { status?: number; headers?: Record<string, string> }) => ({
+        body,
+        status: init?.status ?? 200,
+        headers: new Map(Object.entries(init?.headers ?? {})),
+        async json() { return body; },
+      }),
+    },
+  };
+});
+
+// Mock rate limiting — allow all requests
+vi.mock("@/lib/ratelimit", () => ({
+  ipReadRateLimiter: null,
+  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+  getClientIp: vi.fn().mockReturnValue("127.0.0.1"),
+}));
+
+// Mock logger
+vi.mock("@/lib/logger", () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+}));
+
 // Mock the database module
 vi.mock("@/lib/db/index", () => ({
   getDb: vi.fn(),
@@ -19,6 +63,7 @@ vi.mock("@upstash/redis", () => ({
   Redis: vi.fn(),
 }));
 
+import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db/index";
 import { getServerConfig } from "@/lib/config";
 
@@ -33,9 +78,9 @@ describe("GET /api/health", () => {
       execute: mockExecute,
     } as never);
 
-    // Dynamic import to pick up mocks
     const { GET } = await import("@/app/api/health/route");
-    const response = await GET();
+    const request = new NextRequest("https://accepted.fyi/api/health");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -46,10 +91,6 @@ describe("GET /api/health", () => {
   });
 
   it("should return 503 when database is down", async () => {
-    vi.mocked(getDb).mockReturnValue({
-      execute: vi.fn().mockRejectedValue(new Error("connection refused")),
-    } as never);
-
     vi.resetModules();
     vi.doMock("@/lib/db/index", () => ({
       getDb: vi.fn().mockReturnValue({
@@ -68,7 +109,8 @@ describe("GET /api/health", () => {
     }));
 
     const { GET } = await import("@/app/api/health/route");
-    const response = await GET();
+    const request = new NextRequest("https://accepted.fyi/api/health");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(response.status).toBe(503);
@@ -77,15 +119,6 @@ describe("GET /api/health", () => {
   });
 
   it("should report Redis as skipped when not configured", async () => {
-    vi.mocked(getDb).mockReturnValue({
-      execute: vi.fn().mockResolvedValue([{ result: 1 }]),
-    } as never);
-    vi.mocked(getServerConfig).mockReturnValue({
-      database: { url: "postgres://localhost/test" },
-      supabase: { url: "https://test.supabase.co", anonKey: "key" },
-      redis: null,
-    });
-
     vi.resetModules();
     vi.doMock("@/lib/db/index", () => ({
       getDb: vi.fn().mockReturnValue({
@@ -104,7 +137,8 @@ describe("GET /api/health", () => {
     }));
 
     const { GET } = await import("@/app/api/health/route");
-    const response = await GET();
+    const request = new NextRequest("https://accepted.fyi/api/health");
+    const response = await GET(request);
     const body = await response.json();
 
     expect(body.checks.redis.status).toBe("skipped");

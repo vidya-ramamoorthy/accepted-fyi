@@ -11,7 +11,9 @@ export default function SchoolsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Schools error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Schools error:", error);
+    }
   }, [error]);
 
   return (

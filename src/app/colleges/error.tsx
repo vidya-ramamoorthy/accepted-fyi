@@ -11,7 +11,9 @@ export default function CollegesError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Colleges error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Colleges error:", error);
+    }
   }, [error]);
 
   return (
