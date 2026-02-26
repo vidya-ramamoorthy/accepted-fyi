@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "accepted.fyi — Real College Admissions Data from Real Students",
   description:
     "See what it actually takes to get into college. Crowdsourced, verified admissions data — GPA, test scores, extracurriculars, and outcomes.",
+  verification: {
+    google: "LnaYoeCY5QWDV9rTD6pI_iTiat5MP2Sp5W3IQLh5zwo",
+  },
   openGraph: {
     title: "accepted.fyi — Real College Admissions Data",
     description:
