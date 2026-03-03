@@ -301,9 +301,24 @@ export default async function HomePage() {
           <span className="text-sm font-bold text-slate-500">
             accepted<span className="text-violet-500">.fyi</span>
           </span>
-          <p className="text-sm text-slate-600">
-            Real admission results from real students
-          </p>
+          <div className="flex items-center gap-6">
+            <p className="text-sm text-slate-600">
+              Real admission results from real students
+            </p>
+            <span className="text-sm text-slate-700">&middot;</span>
+            <Link
+              href="/privacy"
+              className="text-sm text-slate-600 transition-colors hover:text-slate-400"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="text-sm text-slate-600 transition-colors hover:text-slate-400"
+            >
+              Terms
+            </Link>
+          </div>
         </div>
       </footer>
     </main>
