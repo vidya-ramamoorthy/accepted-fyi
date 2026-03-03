@@ -296,28 +296,32 @@ export default async function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 bg-slate-950 px-6 py-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <span className="text-sm font-bold text-slate-500">
-            accepted<span className="text-violet-500">.fyi</span>
-          </span>
-          <div className="flex items-center gap-6">
-            <p className="text-sm text-slate-600">
-              Real admission results from real students
+      <footer className="border-t border-white/5 bg-slate-950 px-6 py-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col items-center gap-6">
+            <span className="text-sm font-bold text-slate-500">
+              accepted<span className="text-violet-500">.fyi</span>
+            </span>
+            <p className="max-w-md text-center text-sm text-slate-500">
+              accepted.fyi is a crowdsourced platform where students share
+              college admissions outcomes — GPAs, test scores, and decisions —
+              so others can make data-driven college choices. Sign in with Google
+              to submit your results and explore real admission data.
             </p>
-            <span className="text-sm text-slate-700">&middot;</span>
-            <Link
-              href="/privacy"
-              className="text-sm text-slate-600 transition-colors hover:text-slate-400"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/terms"
-              className="text-sm text-slate-600 transition-colors hover:text-slate-400"
-            >
-              Terms
-            </Link>
+            <div className="flex items-center gap-6">
+              <Link
+                href="/privacy"
+                className="text-sm text-slate-500 underline underline-offset-2 transition-colors hover:text-slate-300"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms"
+                className="text-sm text-slate-500 underline underline-offset-2 transition-colors hover:text-slate-300"
+              >
+                Terms of Service
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
