@@ -309,18 +309,18 @@ export default async function HomePage() {
               to submit your results and explore real admission data.
             </p>
             <div className="flex items-center gap-6">
-              <Link
-                href="/privacy"
+              <a
+                href="https://accepted.fyi/privacy"
                 className="text-sm text-slate-500 underline underline-offset-2 transition-colors hover:text-slate-300"
               >
                 Privacy Policy
-              </Link>
-              <Link
-                href="/terms"
+              </a>
+              <a
+                href="https://accepted.fyi/terms"
                 className="text-sm text-slate-500 underline underline-offset-2 transition-colors hover:text-slate-300"
               >
                 Terms of Service
-              </Link>
+              </a>
             </div>
           </div>
         </div>
