@@ -28,7 +28,7 @@ export async function generateMetadata({
 
   const decisionLabel = DECISION_COLORS[submission.decision]?.label ?? submission.decision;
   const roundLabel = ROUND_LABELS[submission.applicationRound] ?? submission.applicationRound;
-  const title = `${decisionLabel} — ${submission.schoolName} | accepted.fyi`;
+  const title = `${decisionLabel} — ${submission.schoolName}`;
   const description = `${decisionLabel} to ${submission.schoolName} (${submission.admissionCycle}, ${roundLabel}). See real admissions data on accepted.fyi.`;
   const baseUrl = getBaseUrl();
   const ogImageUrl = `${baseUrl}/api/og/card/${id}`;

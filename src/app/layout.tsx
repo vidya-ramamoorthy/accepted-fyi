@@ -15,9 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "accepted.fyi — Real College Admissions Data from Real Students",
+  metadataBase: new URL("https://accepted.fyi"),
+  title: {
+    default: "accepted.fyi — Real College Admissions Data from Real Students",
+    template: "%s | accepted.fyi",
+  },
   description:
-    "See what it actually takes to get into college. Crowdsourced, verified admissions data — GPA, test scores, extracurriculars, and outcomes.",
+    "See what it actually takes to get into top colleges. Browse real admissions outcomes — GPA, SAT, ACT, extracurriculars — from thousands of verified students. Free.",
   verification: {
     google: "LnaYoeCY5QWDV9rTD6pI_iTiat5MP2Sp5W3IQLh5zwo",
   },
@@ -27,12 +31,16 @@ export const metadata: Metadata = {
       "Crowdsourced, verified admissions data from real students. Browse GPA, SAT, ACT scores, and outcomes for thousands of schools.",
     type: "website",
     siteName: "accepted.fyi",
+    url: "https://accepted.fyi",
   },
   twitter: {
     card: "summary_large_image",
     title: "accepted.fyi",
     description:
       "See what it actually takes to get into college. Real admissions data from real students.",
+  },
+  alternates: {
+    canonical: "https://accepted.fyi",
   },
 };
 

@@ -16,13 +16,14 @@ export const revalidate = 1800;
 const MIT_NAME = "Massachusetts Institute of Technology";
 
 export const metadata: Metadata = {
-  title:
-    "MIT Admissions Data — Acceptance Rate, SAT Scores & Real Outcomes | accepted.fyi",
+  title: "MIT Admissions Data — Acceptance Rate, SAT Scores & Real Outcomes (2026)",
   description:
-    "See real MIT admissions data: acceptance rate, SAT/ACT score ranges, and community-reported outcomes. Pi Day decisions March 14.",
+    "See real MIT admissions data: 3.9% acceptance rate, SAT/ACT score ranges, and community-reported outcomes from real applicants. Pi Day decisions March 14. Free.",
+  alternates: {
+    canonical: "https://accepted.fyi/mit",
+  },
   openGraph: {
-    title:
-      "MIT Admissions Data — Acceptance Rate, SAT Scores & Real Outcomes | accepted.fyi",
+    title: "MIT Admissions Data — Acceptance Rate, SAT Scores & Real Outcomes",
     description:
       "See real MIT admissions data: acceptance rate, SAT/ACT score ranges, and community-reported outcomes.",
     type: "website",
@@ -30,8 +31,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title:
-      "MIT Admissions Data — Acceptance Rate, SAT Scores & Real Outcomes | accepted.fyi",
+    title: "MIT Admissions Data — Real Outcomes from Real Applicants",
     description:
       "See real MIT admissions data. Pi Day decisions March 14.",
   },

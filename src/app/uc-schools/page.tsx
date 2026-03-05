@@ -27,11 +27,14 @@ const UC_CAMPUS_NAMES = [
 ];
 
 export const metadata: Metadata = {
-  title: "UC Schools Admissions Data — Compare All 9 Campuses | accepted.fyi",
+  title: "UC Schools Admissions Data — Compare All 9 Campuses (2026)",
   description:
-    "Compare acceptance rates, SAT scores, and real admissions outcomes across all 9 University of California campuses. Community-reported data from thousands of applicants.",
+    "Compare acceptance rates, SAT scores, and real admissions outcomes across all 9 UC campuses: UCLA, Berkeley, San Diego, Davis, Irvine, Santa Barbara, Santa Cruz, Riverside, Merced. Free.",
+  alternates: {
+    canonical: "https://accepted.fyi/uc-schools",
+  },
   openGraph: {
-    title: "UC Schools Admissions Data — Compare All 9 Campuses | accepted.fyi",
+    title: "UC Schools Admissions Data — Compare All 9 Campuses",
     description:
       "Compare acceptance rates, SAT scores, and real admissions outcomes across all 9 University of California campuses.",
     type: "website",
@@ -39,7 +42,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "UC Schools Admissions Data — Compare All 9 Campuses | accepted.fyi",
+    title: "UC Schools Admissions Data — Compare All 9 Campuses",
     description:
       "Compare acceptance rates, SAT scores, and real admissions outcomes across all 9 UC campuses.",
   },

@@ -4,9 +4,12 @@ import type { Metadata } from "next";
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — accepted.fyi",
+  title: "Privacy Policy",
   description:
     "How accepted.fyi collects, uses, and protects your data. We never sell your information.",
+  alternates: {
+    canonical: "https://accepted.fyi/privacy",
+  },
 };
 
 export default function PrivacyPolicyPage() {

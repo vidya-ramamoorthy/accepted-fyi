@@ -19,14 +19,25 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: StatePageProps): Promise<Metadata> {
   const { stateSlug } = await params;
   const state = STATE_BY_SLUG.get(stateSlug);
-  if (!state) return { title: "State Not Found | accepted.fyi" };
+  if (!state) return { title: "State Not Found" };
 
-  const title = `Colleges in ${state.name} - Acceptance Rates & SAT Scores | accepted.fyi`;
-  const description = `Browse all colleges and universities in ${state.name}. See acceptance rates, SAT/ACT score ranges, and admissions data for ${state.abbreviation} schools.`;
+  const aggregateStats = await getStateAggregateStats(state.abbreviation);
+  const countSnippet = aggregateStats.totalSchools > 0
+    ? `${aggregateStats.totalSchools} colleges`
+    : "colleges";
+  const avgAcceptSnippet = aggregateStats.avgAcceptanceRate
+    ? `, avg ${aggregateStats.avgAcceptanceRate}% acceptance rate`
+    : "";
+
+  const title = `Colleges in ${state.name} — ${countSnippet}${avgAcceptSnippet} (2026)`;
+  const description = `Browse ${countSnippet} in ${state.name}. Compare acceptance rates, SAT/ACT score ranges, and real student outcomes for ${state.abbreviation} schools. Updated for 2025–2026.`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://accepted.fyi/colleges/state/${stateSlug}`,
+    },
     openGraph: { title, description, type: "website", siteName: "accepted.fyi" },
     twitter: { card: "summary_large_image", title, description },
   };
@@ -63,11 +74,60 @@ export default async function StatePage({ params }: StatePageProps) {
     })),
   };
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://accepted.fyi" },
+      { "@type": "ListItem", position: 2, name: "Colleges", item: "https://accepted.fyi/colleges" },
+      { "@type": "ListItem", position: 3, name: state.name, item: `https://accepted.fyi/colleges/state/${stateSlug}` },
+    ],
+  };
+
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: `How many colleges are in ${state.name}?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `There are ${stateSchools.length} colleges and universities in ${state.name}, including ${aggregateStats.publicCount} public and ${aggregateStats.privateCount} private institutions.`,
+        },
+      },
+      ...(aggregateStats.avgAcceptanceRate ? [{
+        "@type": "Question",
+        name: `What is the average acceptance rate for ${state.name} colleges?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `The average acceptance rate for colleges in ${state.name} is ${aggregateStats.avgAcceptanceRate}%.`,
+        },
+      }] : []),
+      ...(aggregateStats.avgSat ? [{
+        "@type": "Question",
+        name: `What is the average SAT score for ${state.name} colleges?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `The average SAT score across colleges in ${state.name} is ${aggregateStats.avgSat}.`,
+        },
+      }] : []),
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
 
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
@@ -134,6 +194,35 @@ export default async function StatePage({ params }: StatePageProps) {
         <Suspense fallback={<div className="mt-6 text-sm text-slate-500">Loading filters...</div>}>
           <FilterableSchoolGrid schools={stateSchools} hideFilter="state" />
         </Suspense>
+
+        {/* FAQ Section */}
+        <section className="mt-16 border-t border-white/5 pt-8">
+          <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>
+          <dl className="mt-6 space-y-6">
+            <div>
+              <dt className="text-base font-semibold text-white">How many colleges are in {state.name}?</dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                There are {stateSchools.length} colleges and universities in {state.name}, including {aggregateStats.publicCount} public and {aggregateStats.privateCount} private institutions.
+              </dd>
+            </div>
+            {aggregateStats.avgAcceptanceRate && (
+              <div>
+                <dt className="text-base font-semibold text-white">What is the average acceptance rate for {state.name} colleges?</dt>
+                <dd className="mt-2 text-sm text-slate-400">
+                  The average acceptance rate for colleges in {state.name} is {aggregateStats.avgAcceptanceRate}%.
+                </dd>
+              </div>
+            )}
+            {aggregateStats.avgSat && (
+              <div>
+                <dt className="text-base font-semibold text-white">What is the average SAT score for {state.name} colleges?</dt>
+                <dd className="mt-2 text-sm text-slate-400">
+                  The average SAT score across colleges in {state.name} is {aggregateStats.avgSat}.
+                </dd>
+              </div>
+            )}
+          </dl>
+        </section>
 
         {/* Cross-links to other states */}
         <section className="mt-16 border-t border-white/5 pt-8">

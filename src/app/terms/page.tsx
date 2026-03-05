@@ -4,9 +4,12 @@ import type { Metadata } from "next";
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "Terms of Service — accepted.fyi",
+  title: "Terms of Service",
   description:
     "Terms and conditions for using accepted.fyi, the crowdsourced college admissions data platform.",
+  alternates: {
+    canonical: "https://accepted.fyi/terms",
+  },
 };
 
 export default function TermsOfServicePage() {

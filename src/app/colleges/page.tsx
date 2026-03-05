@@ -7,9 +7,12 @@ import NavbarAuthSection from "@/components/NavbarAuthSection";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Browse Colleges by State, SAT Score, ACT Score & Acceptance Rate | accepted.fyi",
+  title: "Browse Colleges by State, SAT, ACT & Acceptance Rate (2026)",
   description:
-    "Find the right college for you. Browse US colleges by state, SAT score range, ACT score range, and acceptance rate. Real admissions data from thousands of schools.",
+    "Find the right college for you. Browse 2,000+ US colleges by state, SAT score, ACT score, and acceptance rate. Real admissions data from verified students. Free.",
+  alternates: {
+    canonical: "https://accepted.fyi/colleges",
+  },
   openGraph: {
     title: "Browse Colleges | accepted.fyi",
     description:

@@ -7,9 +7,12 @@ import SchoolSearchForm from "@/components/schools/SchoolSearchForm";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Browse Schools | accepted.fyi",
+  title: "Browse 2,000+ US Colleges — Acceptance Rates, SAT & Real Outcomes (2026)",
   description:
-    "Browse admissions data for thousands of US colleges. See acceptance rates, SAT/ACT ranges, GPA stats, and crowdsourced outcomes.",
+    "Search and filter admissions data for thousands of US colleges. Compare acceptance rates, SAT/ACT ranges, GPA stats, and crowdsourced outcomes from real students. Free.",
+  alternates: {
+    canonical: "https://accepted.fyi/schools",
+  },
 };
 
 interface SchoolsPageProps {

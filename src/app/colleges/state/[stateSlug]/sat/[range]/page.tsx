@@ -30,14 +30,20 @@ export async function generateMetadata({ params }: StateSatPageProps): Promise<M
   const { stateSlug, range: rangeSlug } = await params;
   const state = STATE_BY_SLUG.get(stateSlug);
   const range = SAT_RANGE_BY_SLUG.get(rangeSlug);
-  if (!state || !range) return { title: "Not Found | accepted.fyi" };
+  if (!state || !range) return { title: "Not Found" };
 
-  const title = `${state.name} Colleges for ${range.label} SAT | accepted.fyi`;
-  const description = `Find colleges in ${state.name} where a ${range.label} SAT score is competitive. See acceptance rates and admissions data for ${state.abbreviation} schools.`;
+  const matchingSchools = await getSchoolsByStateAndSatRange(state.abbreviation, range.min, range.max);
+  const count = matchingSchools.length;
+
+  const title = `${count} ${state.name} Colleges for a ${range.label} SAT (2026)`;
+  const description = `See ${count} colleges in ${state.name} where a ${range.label} SAT score is competitive. Compare acceptance rates and real student outcomes for ${state.abbreviation} schools.`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://accepted.fyi/colleges/state/${stateSlug}/sat/${rangeSlug}`,
+    },
     openGraph: { title, description, type: "website", siteName: "accepted.fyi" },
     twitter: { card: "summary_large_image", title, description },
   };
@@ -55,8 +61,23 @@ export default async function StateSatPage({ params }: StateSatPageProps) {
     range.max
   );
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://accepted.fyi" },
+      { "@type": "ListItem", position: 2, name: "Colleges", item: "https://accepted.fyi/colleges" },
+      { "@type": "ListItem", position: 3, name: state.name, item: `https://accepted.fyi/colleges/state/${stateSlug}` },
+      { "@type": "ListItem", position: 4, name: `${range.label} SAT`, item: `https://accepted.fyi/colleges/state/${stateSlug}/sat/${rangeSlug}` },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="text-xl font-bold text-white tracking-tight">

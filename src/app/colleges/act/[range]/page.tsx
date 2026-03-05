@@ -19,14 +19,20 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: ActRangePageProps): Promise<Metadata> {
   const { range: rangeSlug } = await params;
   const range = ACT_RANGE_BY_SLUG.get(rangeSlug);
-  if (!range) return { title: "Not Found | accepted.fyi" };
+  if (!range) return { title: "Not Found" };
 
-  const title = `Colleges for ${range.label} ACT Score | accepted.fyi`;
-  const description = `Find colleges where a ${range.label} ACT score is competitive. See acceptance rates and admissions data for matching schools.`;
+  const matchingSchools = await getSchoolsByActRange(range.min, range.max);
+  const count = matchingSchools.length;
+
+  const title = `${count} Colleges for a ${range.label} ACT Score (2026 Data)`;
+  const description = `See ${count} colleges where a ${range.label} ACT score is competitive. Compare acceptance rates, real student outcomes, and admissions stats. Free and updated.`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://accepted.fyi/colleges/act/${rangeSlug}`,
+    },
     openGraph: { title, description, type: "website", siteName: "accepted.fyi" },
     twitter: { card: "summary_large_image", title, description },
   };
@@ -39,8 +45,49 @@ export default async function ActRangePage({ params }: ActRangePageProps) {
 
   const matchingSchools = await getSchoolsByActRange(range.min, range.max);
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://accepted.fyi" },
+      { "@type": "ListItem", position: 2, name: "Colleges", item: "https://accepted.fyi/colleges" },
+      { "@type": "ListItem", position: 3, name: `${range.label} ACT`, item: `https://accepted.fyi/colleges/act/${rangeSlug}` },
+    ],
+  };
+
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: `Is a ${range.label} ACT score good for college?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `A ${range.label} ACT score is competitive at ${matchingSchools.length} colleges in our database. Browse the full list to see acceptance rates and real student outcomes.`,
+        },
+      },
+      {
+        "@type": "Question",
+        name: `What colleges can I get into with a ${range.label} ACT?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `There are ${matchingSchools.length} colleges where a ${range.label} ACT score falls within the typical admitted student range. See the full list with acceptance rates and student outcomes.`,
+        },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="text-xl font-bold text-white tracking-tight">
@@ -78,6 +125,25 @@ export default async function ActRangePage({ params }: ActRangePageProps) {
         <Suspense fallback={<div className="mt-6 text-sm text-slate-500">Loading filters...</div>}>
           <FilterableSchoolGrid schools={matchingSchools} hideFilter="act" />
         </Suspense>
+
+        {/* FAQ Section */}
+        <section className="mt-16 border-t border-white/5 pt-8">
+          <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>
+          <dl className="mt-6 space-y-6">
+            <div>
+              <dt className="text-base font-semibold text-white">Is a {range.label} ACT score good for college?</dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                A {range.label} ACT score is competitive at {matchingSchools.length} colleges in our database. Browse the full list above to see acceptance rates and real student outcomes.
+              </dd>
+            </div>
+            <div>
+              <dt className="text-base font-semibold text-white">What colleges can I get into with a {range.label} ACT?</dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                There are {matchingSchools.length} colleges where a {range.label} ACT score falls within the typical admitted student range. See the full list above with acceptance rates and student outcomes.
+              </dd>
+            </div>
+          </dl>
+        </section>
 
         {/* Cross-links */}
         <section className="mt-16 border-t border-white/5 pt-8">

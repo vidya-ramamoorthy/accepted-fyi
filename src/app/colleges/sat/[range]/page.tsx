@@ -19,14 +19,20 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: SatRangePageProps): Promise<Metadata> {
   const { range: rangeSlug } = await params;
   const range = SAT_RANGE_BY_SLUG.get(rangeSlug);
-  if (!range) return { title: "Not Found | accepted.fyi" };
+  if (!range) return { title: "Not Found" };
 
-  const title = `Colleges for ${range.label} SAT Score | accepted.fyi`;
-  const description = `Find colleges where a ${range.label} SAT score is competitive. See acceptance rates and admissions data for matching schools.`;
+  const matchingSchools = await getSchoolsBySatRange(range.min, range.max);
+  const count = matchingSchools.length;
+
+  const title = `${count} Colleges for a ${range.label} SAT Score (2026 Data)`;
+  const description = `See ${count} colleges where a ${range.label} SAT score is competitive. Compare acceptance rates, real student outcomes, and admissions stats. Free and updated.`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://accepted.fyi/colleges/sat/${rangeSlug}`,
+    },
     openGraph: { title, description, type: "website", siteName: "accepted.fyi" },
     twitter: { card: "summary_large_image", title, description },
   };
@@ -39,8 +45,49 @@ export default async function SatRangePage({ params }: SatRangePageProps) {
 
   const matchingSchools = await getSchoolsBySatRange(range.min, range.max);
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://accepted.fyi" },
+      { "@type": "ListItem", position: 2, name: "Colleges", item: "https://accepted.fyi/colleges" },
+      { "@type": "ListItem", position: 3, name: `${range.label} SAT`, item: `https://accepted.fyi/colleges/sat/${rangeSlug}` },
+    ],
+  };
+
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: `Is a ${range.label} SAT score good for college?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `A ${range.label} SAT score is competitive at ${matchingSchools.length} colleges in our database. Browse the full list to see acceptance rates and how real applicants performed.`,
+        },
+      },
+      {
+        "@type": "Question",
+        name: `What colleges can I get into with a ${range.label} SAT?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `There are ${matchingSchools.length} colleges where a ${range.label} SAT score falls within the typical admitted student range. See the full list with acceptance rates and student outcomes.`,
+        },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="text-xl font-bold text-white tracking-tight">
@@ -78,6 +125,25 @@ export default async function SatRangePage({ params }: SatRangePageProps) {
         <Suspense fallback={<div className="mt-6 text-sm text-slate-500">Loading filters...</div>}>
           <FilterableSchoolGrid schools={matchingSchools} hideFilter="sat" />
         </Suspense>
+
+        {/* FAQ Section */}
+        <section className="mt-16 border-t border-white/5 pt-8">
+          <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>
+          <dl className="mt-6 space-y-6">
+            <div>
+              <dt className="text-base font-semibold text-white">Is a {range.label} SAT score good for college?</dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                A {range.label} SAT score is competitive at {matchingSchools.length} colleges in our database. Browse the full list above to see acceptance rates and how real applicants performed.
+              </dd>
+            </div>
+            <div>
+              <dt className="text-base font-semibold text-white">What colleges can I get into with a {range.label} SAT?</dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                There are {matchingSchools.length} colleges where a {range.label} SAT score falls within the typical admitted student range. See the full list above with acceptance rates and student outcomes.
+              </dd>
+            </div>
+          </dl>
+        </section>
 
         {/* Cross-links */}
         <section className="mt-16 border-t border-white/5 pt-8">

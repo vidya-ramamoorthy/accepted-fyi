@@ -33,17 +33,26 @@ export async function generateMetadata({ params }: SchoolDetailPageProps): Promi
   const school = await resolveSchool(slug);
 
   if (!school) {
-    return { title: "School Not Found | accepted.fyi" };
+    return { title: "School Not Found" };
   }
 
-  const title = `${school.name} Admissions Data | accepted.fyi`;
-  const description = `See real admissions data for ${school.name} in ${school.city}, ${school.state}. ${
-    school.acceptanceRate ? `Official acceptance rate: ${school.acceptanceRate}%. ` : ""
-  }Browse GPA, SAT, ACT scores from real applicants.`;
+  const stats = await getSubmissionStatsForSchool(school.id);
+  const acceptRateSnippet = school.acceptanceRate
+    ? `${school.acceptanceRate}% acceptance rate. `
+    : "";
+  const submissionSnippet = stats.totalCount > 0
+    ? `${stats.totalCount} real student outcomes. `
+    : "";
+
+  const title = `${school.name} Admissions Data — Acceptance Rate, SAT & Real Outcomes (2026)`;
+  const description = `${acceptRateSnippet}${submissionSnippet}See who got into ${school.name} — GPA, SAT, ACT, extracurriculars from real applicants in ${school.city}, ${school.state}. Free.`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://accepted.fyi/schools/${slug}`,
+    },
     openGraph: {
       title,
       description,
@@ -145,12 +154,77 @@ export default async function SchoolDetailPage({ params, searchParams }: SchoolD
     ...(school.website && { url: `https://${school.website}` }),
   };
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://accepted.fyi" },
+      { "@type": "ListItem", position: 2, name: "Schools", item: "https://accepted.fyi/schools" },
+      { "@type": "ListItem", position: 3, name: school.name, item: `https://accepted.fyi/schools/${slug}` },
+    ],
+  };
+
+  const faqItems: { question: string; answer: string }[] = [];
+  if (school.acceptanceRate) {
+    faqItems.push({
+      question: `What is ${school.name}'s acceptance rate?`,
+      answer: `${school.name} has an official acceptance rate of ${school.acceptanceRate}%${totalSubmissions > 0 && crowdsourcedAcceptanceRate !== null ? `. Based on ${totalSubmissions} community-reported outcomes, the crowdsourced acceptance rate is ${crowdsourcedAcceptanceRate}%.` : "."}`,
+    });
+  }
+  if (school.satAverage || (school.sat25thPercentile && school.sat75thPercentile)) {
+    const satInfo = school.satAverage
+      ? `average SAT score of ${school.satAverage}`
+      : `SAT range of ${school.sat25thPercentile}–${school.sat75thPercentile} (25th–75th percentile)`;
+    faqItems.push({
+      question: `What SAT score do you need for ${school.name}?`,
+      answer: `${school.name} has an ${satInfo}.${averageSat ? ` Community-reported average SAT from real applicants is ${averageSat}.` : ""}`,
+    });
+  }
+  if (school.actMedian || (school.act25thPercentile && school.act75thPercentile)) {
+    const actInfo = school.actMedian
+      ? `median ACT score of ${school.actMedian}`
+      : `ACT range of ${school.act25thPercentile}–${school.act75thPercentile} (25th–75th percentile)`;
+    faqItems.push({
+      question: `What ACT score do you need for ${school.name}?`,
+      answer: `${school.name} has a ${actInfo}.${averageAct !== null ? ` Community-reported average ACT from real applicants is ${averageAct}.` : ""}`,
+    });
+  }
+  if (totalSubmissions > 0 && averageGpa) {
+    faqItems.push({
+      question: `What GPA do you need to get into ${school.name}?`,
+      answer: `Based on ${totalSubmissions} community-reported outcomes, the average unweighted GPA of applicants to ${school.name} is ${averageGpa}${minGpa !== null && maxGpa !== null ? ` (range: ${minGpa}–${maxGpa})` : ""}.`,
+    });
+  }
+
+  const faqLd = faqItems.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  } : null;
+
   return (
     <div className="min-h-screen bg-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      {faqLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+        />
+      )}
 
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
@@ -417,6 +491,21 @@ export default async function SchoolDetailPage({ params, searchParams }: SchoolD
             </>
           )}
         </div>
+
+        {/* FAQ Section */}
+        {faqItems.length > 0 && (
+          <section className="mt-16 border-t border-white/5 pt-8">
+            <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>
+            <dl className="mt-6 space-y-6">
+              {faqItems.map((item) => (
+                <div key={item.question}>
+                  <dt className="text-base font-semibold text-white">{item.question}</dt>
+                  <dd className="mt-2 text-sm text-slate-400">{item.answer}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
       </main>
     </div>
   );
