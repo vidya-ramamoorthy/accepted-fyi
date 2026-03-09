@@ -109,11 +109,70 @@ export default async function MITPage() {
     },
   };
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://accepted.fyi" },
+      { "@type": "ListItem", position: 2, name: "Schools", item: "https://accepted.fyi/schools" },
+      { "@type": "ListItem", position: 3, name: "MIT", item: "https://accepted.fyi/mit" },
+    ],
+  };
+
+  const acceptRateText = mitSchool.acceptanceRate
+    ? `MIT has an official acceptance rate of ${mitSchool.acceptanceRate}%.`
+    : "MIT is one of the most selective universities in the United States.";
+  const satText = mitSchool.satAverage
+    ? `The average SAT score at MIT is ${mitSchool.satAverage}.`
+    : "";
+  const communityText = totalSubmissions > 0
+    ? ` Based on ${totalSubmissions} community-reported outcomes, the crowdsourced acceptance rate is ${crowdsourcedAcceptanceRate}%.`
+    : "";
+
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "What is MIT's acceptance rate?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `${acceptRateText}${communityText}`,
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What SAT score do you need for MIT?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `${satText}${averageSat ? ` Community-reported average SAT from real applicants is ${averageSat}.` : ""} MIT is test-flexible but most admitted students score in the top percentiles.`,
+        },
+      },
+      {
+        "@type": "Question",
+        name: "When does MIT release admissions decisions?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "MIT releases Early Action decisions in mid-December and Regular Action decisions on Pi Day (March 14). Decisions are posted online at approximately 6:28 PM ET.",
+        },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
 
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
