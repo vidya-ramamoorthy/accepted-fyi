@@ -302,6 +302,14 @@
 - Individual crowdsourced profiles gated until they contribute admission results (senior year)
 - Optional: contribute non-admission data ("sophomore at X HS, taking Y APs") to stay engaged and build high school profile dataset
 
+### Phase 2.5: EC Parsing & Intelligence Pipeline
+> **Status:** Planned. See `docs/decisions/005-ec-parsing-pipeline.md` for full architecture, ASCII diagrams, schema, taxonomy, cost projections, and ML vs GenAI analysis.
+
+- **Phase 2A (GenAI Extraction):** Use Claude API to parse raw EC text into structured categories (athletics, research, community_service, etc.) with leadership roles, recognition levels, and impact metrics. New `activities` table. Cost: ~$0.01/profile. **Trigger: build post-launch.**
+- **Phase 2B (ML Pattern Detection):** Random Forest feature importance per school, K-Means EC archetype clustering, logistic regression acceptance predictor. Runs on CPU, costs $0. **Trigger: 25,000+ parsed ECs.**
+- **Phase 2C (GenAI Explanation):** Translate ML patterns into personalized, actionable advice ("Adding research would boost your MIT chances by +14%"). Cost: ~$0.01/query. **Trigger: 50,000+ parsed ECs.**
+- **Competitive moat:** No competitor has structured, individual-level EC data at scale. This is the $5K consultant insight delivered for $10/month.
+
 ### Phase 3: Viral & Engagement Features
 
 #### Shareable Decision Cards
@@ -353,7 +361,7 @@
 
 ## Cost Optimization Rules (DO NOT REGRESS)
 
-These rules exist to keep infrastructure costs low. Violating them can 10x hosting bills. See `docs/decisions/002-cost-analysis-by-user-tier.md` and `docs/decisions/003-cost-reduction-plan.md` for full context.
+These rules exist to keep infrastructure costs low. Violating them can 10x hosting bills. See `docs/decisions/002-cost-analysis-by-user-tier.md`, `docs/decisions/003-cost-reduction-plan.md`, `docs/decisions/004-growth-strategy-and-premium-economics.md`, and `docs/decisions/005-ec-parsing-pipeline.md` for full context.
 
 ### Caching Rules
 - **NEVER add `export const dynamic = "force-dynamic"` to public pages.** The only page allowed to use `force-dynamic` is the auth-gated dashboard layout (`(dashboard)/layout.tsx`). Every public page must use ISR (`export const revalidate = N`) or be fully static.
