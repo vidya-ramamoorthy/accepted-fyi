@@ -1,9 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getSchoolById, getSchoolBySlug } from "@/lib/db/queries/schools";
+import {
+  getSchoolById,
+  getSchoolBySlug,
+  getSchoolsByNamePattern,
+  getSchoolsByExactNames,
+} from "@/lib/db/queries/schools";
 import { getSubmissionsForSchool, getSubmissionStatsForSchool } from "@/lib/db/queries/submissions";
 import { getTimelinesForSchoolAndCycle } from "@/lib/db/queries/decision-timelines";
+import {
+  buildSchoolPageTitle,
+  buildSchoolPageDescription,
+} from "@/lib/seo/school-metadata";
 import { DECISION_DATES_2025_2026 } from "@/lib/constants/decision-dates";
 import DecisionTimeline from "@/components/DecisionTimeline";
 import SubmissionCard from "@/components/submissions/SubmissionCard";
@@ -17,6 +26,10 @@ interface SchoolDetailPageProps {
   searchParams: Promise<{ page?: string }>;
 }
 
+function parsePageParam(pageParam: string | undefined): number {
+  return Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+}
+
 async function resolveSchool(slugOrId: string) {
   if (UUID_REGEX.test(slugOrId)) {
     const school = await getSchoolById(slugOrId);
@@ -28,8 +41,13 @@ async function resolveSchool(slugOrId: string) {
   return getSchoolBySlug(slugOrId);
 }
 
-export async function generateMetadata({ params }: SchoolDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: SchoolDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
+  const { page: pageParam } = await searchParams;
+  const currentPage = parsePageParam(pageParam);
   const school = await resolveSchool(slug);
 
   if (!school) {
@@ -37,15 +55,26 @@ export async function generateMetadata({ params }: SchoolDetailPageProps): Promi
   }
 
   const stats = await getSubmissionStatsForSchool(school.id);
-  const acceptRateSnippet = school.acceptanceRate
-    ? `${school.acceptanceRate}% acceptance rate. `
-    : "";
-  const submissionSnippet = stats.totalCount > 0
-    ? `${stats.totalCount} real student outcomes. `
-    : "";
+  const cycleYear = 2026;
+  const title = buildSchoolPageTitle({
+    schoolName: school.name,
+    acceptanceRate: school.acceptanceRate,
+    cycleYear,
+  });
+  const description = buildSchoolPageDescription({
+    schoolName: school.name,
+    acceptanceRate: school.acceptanceRate,
+    submissionCount: stats.totalCount,
+    city: school.city,
+    state: school.state,
+    cycleYear,
+  });
 
-  const title = `${school.name} Admissions Data — Acceptance Rate, SAT & Real Outcomes (2026)`;
-  const description = `${acceptRateSnippet}${submissionSnippet}See who got into ${school.name} — GPA, SAT, ACT, extracurriculars from real applicants in ${school.city}, ${school.state}. Free.`;
+  // Pagination: page 2+ shows different submission slices but is still the same
+  // logical page. Tell Google not to index those slices and to consolidate
+  // ranking signals to the canonical URL — fixes the leak where ?page=2 URLs
+  // were getting indexed separately and stealing impressions.
+  const isPaginated = currentPage > 1;
 
   return {
     title,
@@ -53,6 +82,9 @@ export async function generateMetadata({ params }: SchoolDetailPageProps): Promi
     alternates: {
       canonical: `https://accepted.fyi/schools/${slug}`,
     },
+    robots: isPaginated
+      ? { index: false, follow: true }
+      : undefined,
     openGraph: {
       title,
       description,
@@ -70,7 +102,7 @@ export async function generateMetadata({ params }: SchoolDetailPageProps): Promi
 export default async function SchoolDetailPage({ params, searchParams }: SchoolDetailPageProps) {
   const { slug } = await params;
   const { page: pageParam } = await searchParams;
-  const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
+  const currentPage = parsePageParam(pageParam);
   const school = await resolveSchool(slug);
 
   if (!school) {
@@ -81,6 +113,33 @@ export default async function SchoolDetailPage({ params, searchParams }: SchoolD
     getSubmissionsForSchool(school.id, currentPage),
     getSubmissionStatsForSchool(school.id),
   ]);
+
+  // Topic-cluster reciprocal links: when viewing a UC campus, link to sibling
+  // UC campuses + the /uc-schools hub with keyword-rich anchors. The query is
+  // cached under the shared "uc-system" key so it's free after the first call.
+  const isUcCampus = school.name.startsWith("University of California-");
+  const ucSiblings = isUcCampus
+    ? (await getSchoolsByNamePattern("University of California%", "uc-system"))
+        .filter((sibling) => sibling.id !== school.id)
+    : [];
+
+  // Same pattern for Ivy League — when viewing an Ivy, show sibling Ivies +
+  // /ivy-league hub. Cached under "ivy-league" key, so free after first call.
+  const IVY_LEAGUE_NAMES = [
+    "Brown University",
+    "Columbia University in the City of New York",
+    "Cornell University",
+    "Dartmouth College",
+    "Harvard University",
+    "Princeton University",
+    "University of Pennsylvania",
+    "Yale University",
+  ] as const;
+  const isIvyLeague = (IVY_LEAGUE_NAMES as readonly string[]).includes(school.name);
+  const ivySiblings = isIvyLeague
+    ? (await getSchoolsByExactNames(IVY_LEAGUE_NAMES, "ivy-league"))
+        .filter((sibling) => sibling.id !== school.id)
+    : [];
 
   // Fetch decision timeline: try DB first, fall back to static constants
   const currentCycle = "2025-2026";
@@ -491,6 +550,68 @@ export default async function SchoolDetailPage({ params, searchParams }: SchoolD
             </>
           )}
         </div>
+
+        {/* Related Ivy League Schools — reciprocal cluster links. */}
+        {isIvyLeague && ivySiblings.length > 0 && (
+          <section className="mt-16 border-t border-white/5 pt-8">
+            <h2 className="text-xl font-bold text-white">Related Ivy League Schools</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Compare {school.name} with the other Ivies
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/ivy-league"
+                className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
+              >
+                Compare all 8 Ivy League schools
+              </Link>
+              {ivySiblings.map((sibling) => (
+                <Link
+                  key={sibling.id}
+                  href={`/schools/${sibling.slug ?? sibling.id}`}
+                  className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 transition-colors hover:border-violet-500/30 hover:text-white"
+                >
+                  {sibling.name} acceptance rate
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Related UC Campuses — reciprocal internal links for the UC cluster.
+            Keyword-rich anchor text (e.g. "UC Berkeley acceptance rate") pushes
+            these pages for their target queries. */}
+        {isUcCampus && ucSiblings.length > 0 && (
+          <section className="mt-16 border-t border-white/5 pt-8">
+            <h2 className="text-xl font-bold text-white">Related UC Campuses</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Compare {school.name.replace("University of California-", "UC ")} with other UC schools
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/uc-schools"
+                className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:bg-violet-500/20"
+              >
+                Compare all 9 UC schools
+              </Link>
+              {ucSiblings.map((sibling) => {
+                const siblingShortName = sibling.name.replace(
+                  "University of California-",
+                  "UC "
+                );
+                return (
+                  <Link
+                    key={sibling.id}
+                    href={`/schools/${sibling.slug ?? sibling.id}`}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-300 transition-colors hover:border-violet-500/30 hover:text-white"
+                  >
+                    {siblingShortName} acceptance rate
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* FAQ Section */}
         {faqItems.length > 0 && (

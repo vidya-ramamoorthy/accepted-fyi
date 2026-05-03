@@ -126,6 +126,77 @@ export default async function AcceptanceRatePage({ params }: AcceptanceRatePageP
           <FilterableSchoolGrid schools={matchingSchools} hideFilter="acceptanceRate" />
         </Suspense>
 
+        {/* Keyword-rich anchor table — sends "[School] acceptance rate" link
+            equity from this hub page (which already ranks pos 6-8) down to
+            the individual school detail pages. Top 15 by selectivity. */}
+        {(() => {
+          const topSchools = [...matchingSchools]
+            .filter((school) => school.acceptanceRate !== null)
+            .sort((schoolA, schoolB) => {
+              const rateA = parseFloat(schoolA.acceptanceRate!);
+              const rateB = parseFloat(schoolB.acceptanceRate!);
+              return rateA - rateB;
+            })
+            .slice(0, 15);
+
+          if (topSchools.length < 3) return null;
+
+          return (
+            <section className="mt-16 border-t border-white/5 pt-8">
+              <h2 className="text-xl font-bold text-white">
+                Top Schools with {range.label} Acceptance Rate
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Most selective schools in this tier — click any school for full admissions data
+              </p>
+              <div className="mt-4 overflow-x-auto rounded-2xl border border-white/5">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-900/80">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
+                        School
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
+                        State
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-400">
+                        Acceptance Rate
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-400">
+                        SAT Avg
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {topSchools.map((school) => (
+                      <tr
+                        key={school.id}
+                        className="bg-slate-900/30 transition-colors hover:bg-slate-900/60"
+                      >
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/schools/${school.slug ?? school.id}`}
+                            className="font-medium text-violet-300 hover:text-violet-200"
+                          >
+                            {school.name} acceptance rate
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-slate-400">{school.state}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-emerald-400">
+                          {school.acceptanceRate}%
+                        </td>
+                        <td className="px-4 py-3 text-right text-slate-300">
+                          {school.satAverage ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          );
+        })()}
+
         {/* FAQ Section */}
         <section className="mt-16 border-t border-white/5 pt-8">
           <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>

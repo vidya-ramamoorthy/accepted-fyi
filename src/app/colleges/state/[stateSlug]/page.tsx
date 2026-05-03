@@ -195,6 +195,74 @@ export default async function StatePage({ params }: StatePageProps) {
           <FilterableSchoolGrid schools={stateSchools} hideFilter="state" />
         </Suspense>
 
+        {/* Keyword-rich top-schools table — links to individual school pages with
+            "[School] acceptance rate" anchor text so this state hub passes link
+            equity for the exact query shape. Limited to top 15 most selective
+            schools in the state that have acceptance rate data. */}
+        {(() => {
+          const selectiveSchools = stateSchools
+            .filter((school) => school.acceptanceRate !== null)
+            .sort((schoolA, schoolB) => {
+              const rateA = parseFloat(schoolA.acceptanceRate!);
+              const rateB = parseFloat(schoolB.acceptanceRate!);
+              return rateA - rateB;
+            })
+            .slice(0, 15);
+
+          if (selectiveSchools.length < 3) return null;
+
+          return (
+            <section className="mt-16 border-t border-white/5 pt-8">
+              <h2 className="text-xl font-bold text-white">
+                Top {state.name} Colleges by Acceptance Rate
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Most selective schools in {state.name} — click any school for full admissions data
+              </p>
+              <div className="mt-4 overflow-x-auto rounded-2xl border border-white/5">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-900/80">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
+                        School
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-400">
+                        Acceptance Rate
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-400">
+                        SAT Avg
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {selectiveSchools.map((school) => (
+                      <tr
+                        key={school.id}
+                        className="bg-slate-900/30 transition-colors hover:bg-slate-900/60"
+                      >
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/schools/${school.slug ?? school.id}`}
+                            className="font-medium text-violet-300 hover:text-violet-200"
+                          >
+                            {school.name} acceptance rate
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-emerald-400">
+                          {school.acceptanceRate}%
+                        </td>
+                        <td className="px-4 py-3 text-right text-slate-300">
+                          {school.satAverage ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          );
+        })()}
+
         {/* FAQ Section */}
         <section className="mt-16 border-t border-white/5 pt-8">
           <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>

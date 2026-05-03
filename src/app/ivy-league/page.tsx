@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getSchoolsByNamePattern } from "@/lib/db/queries/schools";
+import { getSchoolsByExactNames } from "@/lib/db/queries/schools";
 import {
   getSubmissionStatsForSchools,
   getPerSchoolSubmissionStats,
@@ -13,50 +13,59 @@ import CountdownBadge from "@/components/ui/CountdownBadge";
 
 export const revalidate = 3600;
 
-const UC_NAME_PATTERN = "University of California%";
-const UC_CAMPUS_NAMES = [
-  "University of California-Berkeley",
-  "University of California-Los Angeles",
-  "University of California-San Diego",
-  "University of California-Davis",
-  "University of California-Irvine",
-  "University of California-Santa Barbara",
-  "University of California-Santa Cruz",
-  "University of California-Riverside",
-  "University of California-Merced",
-];
+const IVY_LEAGUE_NAMES = [
+  "Brown University",
+  "Columbia University in the City of New York",
+  "Cornell University",
+  "Dartmouth College",
+  "Harvard University",
+  "Princeton University",
+  "University of Pennsylvania",
+  "Yale University",
+] as const;
+
+const IVY_SHORT_NAMES: Record<string, string> = {
+  "Brown University": "Brown",
+  "Columbia University in the City of New York": "Columbia",
+  "Cornell University": "Cornell",
+  "Dartmouth College": "Dartmouth",
+  "Harvard University": "Harvard",
+  "Princeton University": "Princeton",
+  "University of Pennsylvania": "UPenn",
+  "Yale University": "Yale",
+};
 
 export const metadata: Metadata = {
-  title: "UC Schools Admissions Data — Compare All 9 Campuses (2026)",
+  title: "Ivy League Acceptance Rates 2026 — Compare All 8 Ivy Schools",
   description:
-    "Compare acceptance rates, SAT scores, and real admissions outcomes across all 9 UC campuses: UCLA, Berkeley, San Diego, Davis, Irvine, Santa Barbara, Santa Cruz, Riverside, Merced. Free.",
+    "Compare 2026 acceptance rates, SAT scores, and real admissions outcomes across all 8 Ivy League schools: Harvard, Yale, Princeton, Columbia, UPenn, Brown, Dartmouth, Cornell. Free.",
   alternates: {
-    canonical: "https://accepted.fyi/uc-schools",
+    canonical: "https://accepted.fyi/ivy-league",
   },
   openGraph: {
-    title: "UC Schools Admissions Data — Compare All 9 Campuses",
+    title: "Ivy League Acceptance Rates 2026 — Compare All 8 Ivy Schools",
     description:
-      "Compare acceptance rates, SAT scores, and real admissions outcomes across all 9 University of California campuses.",
+      "Compare acceptance rates, SAT scores, and real admissions outcomes across all 8 Ivy League schools.",
     type: "website",
     siteName: "accepted.fyi",
   },
   twitter: {
     card: "summary_large_image",
-    title: "UC Schools Admissions Data — Compare All 9 Campuses",
+    title: "Ivy League Acceptance Rates 2026",
     description:
-      "Compare acceptance rates, SAT scores, and real admissions outcomes across all 9 UC campuses.",
+      "Compare acceptance rates, SAT scores, and real admissions outcomes across all 8 Ivy League schools.",
   },
 };
 
-export default async function UCSchoolsPage() {
-  let ucSchools: Awaited<ReturnType<typeof getSchoolsByNamePattern>> = [];
+export default async function IvyLeaguePage() {
+  let ivySchools: Awaited<ReturnType<typeof getSchoolsByExactNames>> = [];
   try {
-    ucSchools = await getSchoolsByNamePattern(UC_NAME_PATTERN, "uc-system");
+    ivySchools = await getSchoolsByExactNames(IVY_LEAGUE_NAMES, "ivy-league");
   } catch {
     // DB unavailable — render with empty data
   }
 
-  const schoolIds = ucSchools.map((school) => school.id);
+  const schoolIds = ivySchools.map((school) => school.id);
 
   let aggregateStats: Awaited<ReturnType<typeof getSubmissionStatsForSchools>> = {
     totalCount: 0,
@@ -71,19 +80,19 @@ export default async function UCSchoolsPage() {
 
   try {
     [aggregateStats, perSchoolStats] = await Promise.all([
-      getSubmissionStatsForSchools(schoolIds, "uc-system"),
-      getPerSchoolSubmissionStats(schoolIds, "uc-system"),
+      getSubmissionStatsForSchools(schoolIds, "ivy-league"),
+      getPerSchoolSubmissionStats(schoolIds, "ivy-league"),
     ]);
   } catch {
-    // DB unavailable — render with empty stats
+    // DB unavailable
   }
 
   const perSchoolStatsMap = new Map(
     perSchoolStats.map((stat) => [stat.schoolId, stat])
   );
 
-  // Compute system-wide institutional averages
-  const schoolsWithAcceptanceRate = ucSchools.filter(
+  // System-wide institutional averages
+  const schoolsWithAcceptanceRate = ivySchools.filter(
     (school) => school.acceptanceRate !== null
   );
   const avgInstitutionalAcceptanceRate =
@@ -96,7 +105,7 @@ export default async function UCSchoolsPage() {
         ).toFixed(1)
       : null;
 
-  const schoolsWithSat = ucSchools.filter(
+  const schoolsWithSat = ivySchools.filter(
     (school) => school.satAverage !== null
   );
   const avgInstitutionalSat =
@@ -109,14 +118,14 @@ export default async function UCSchoolsPage() {
         )
       : null;
 
-  const totalEnrollment = ucSchools.reduce(
+  const totalEnrollment = ivySchools.reduce(
     (sum, school) => sum + (school.undergradEnrollment ?? 0),
     0
   );
 
-  // Get UC decision dates, sorted chronologically
-  const ucDecisionDates = DECISION_DATES_2025_2026.filter((entry) =>
-    UC_CAMPUS_NAMES.includes(entry.schoolName)
+  // Ivy decision dates (Ivy Day = late March)
+  const ivyDecisionDates = DECISION_DATES_2025_2026.filter((entry) =>
+    (IVY_LEAGUE_NAMES as readonly string[]).includes(entry.schoolName)
   ).sort(
     (entryA, entryB) =>
       new Date(entryA.expectedDate).getTime() -
@@ -126,9 +135,9 @@ export default async function UCSchoolsPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "University of California System — All 9 Campuses",
-    numberOfItems: ucSchools.length,
-    itemListElement: ucSchools.map((school, index) => ({
+    name: "Ivy League — All 8 Schools",
+    numberOfItems: ivySchools.length,
+    itemListElement: ivySchools.map((school, index) => ({
       "@type": "ListItem",
       position: index + 1,
       item: {
@@ -144,11 +153,64 @@ export default async function UCSchoolsPage() {
     })),
   };
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://accepted.fyi" },
+      { "@type": "ListItem", position: 2, name: "Colleges", item: "https://accepted.fyi/colleges" },
+      { "@type": "ListItem", position: 3, name: "Ivy League", item: "https://accepted.fyi/ivy-league" },
+    ],
+  };
+
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Which schools are in the Ivy League?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "The Ivy League is made up of 8 schools: Brown University, Columbia University, Cornell University, Dartmouth College, Harvard University, Princeton University, University of Pennsylvania, and Yale University.",
+        },
+      },
+      ...(avgInstitutionalAcceptanceRate
+        ? [
+            {
+              "@type": "Question",
+              name: "What is the average Ivy League acceptance rate?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: `The average acceptance rate across the 8 Ivy League schools is ${avgInstitutionalAcceptanceRate}%, based on the most recent reported data.`,
+              },
+            },
+          ]
+        : []),
+      {
+        "@type": "Question",
+        name: "What is Ivy Day?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Ivy Day is the day in late March when all 8 Ivy League schools release their Regular Decision admissions decisions simultaneously. For 2025-2026, Ivy Day is expected in late March 2026.",
+        },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
 
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
@@ -171,16 +233,15 @@ export default async function UCSchoolsPage() {
           &larr; Browse Colleges
         </Link>
 
-        {/* Header */}
         <h1 className="mt-6 text-3xl font-bold text-white sm:text-4xl">
-          University of California System
+          Ivy League Acceptance Rates 2026
         </h1>
         <p className="mt-2 max-w-2xl text-slate-400">
-          Compare all 9 UC campuses side-by-side. Real admissions data from
-          thousands of applicants.
+          Compare all 8 Ivy League schools side-by-side. Real admissions data
+          from thousands of applicants.
         </p>
 
-        {/* System-wide Aggregate Stats */}
+        {/* System-wide aggregate stats */}
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Community Submissions"
@@ -204,27 +265,23 @@ export default async function UCSchoolsPage() {
           )}
         </div>
 
-        {/* Decision Timeline */}
-        {ucDecisionDates.length > 0 && (
+        {/* Ivy Day decision timeline */}
+        {ivyDecisionDates.length > 0 && (
           <section className="mt-10">
-            <h2 className="text-xl font-bold text-white">
-              When Do UC Decisions Come Out?
-            </h2>
+            <h2 className="text-xl font-bold text-white">When Is Ivy Day 2026?</h2>
             <p className="mt-1 text-sm text-slate-500">
               Expected Regular Decision release dates for 2025-2026
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {ucDecisionDates.map((entry) => {
+              {ivyDecisionDates.map((entry) => {
                 const releaseDate = new Date(entry.expectedDate);
                 const formattedDate = releaseDate.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
                 });
-                const campusShortName = entry.schoolName.replace(
-                  "University of California-",
-                  "UC "
-                );
+                const shortName =
+                  IVY_SHORT_NAMES[entry.schoolName] ?? entry.schoolName;
 
                 return (
                   <div
@@ -232,14 +289,10 @@ export default async function UCSchoolsPage() {
                     className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-white">
-                        {campusShortName}
-                      </span>
+                      <span className="font-medium text-white">{shortName}</span>
                       <CountdownBadge targetDate={entry.expectedDate} />
                     </div>
-                    <p className="mt-1 text-sm text-slate-300">
-                      {formattedDate}
-                    </p>
+                    <p className="mt-1 text-sm text-slate-300">{formattedDate}</p>
                     {!entry.isConfirmed && (
                       <span className="text-xs text-slate-600">estimated</span>
                     )}
@@ -250,15 +303,14 @@ export default async function UCSchoolsPage() {
           </section>
         )}
 
-        {/* Campus Comparison Grid */}
+        {/* School comparison grid */}
         <section className="mt-10">
-          <h2 className="text-xl font-bold text-white">All 9 UC Campuses</h2>
+          <h2 className="text-xl font-bold text-white">All 8 Ivy League Schools</h2>
           <p className="mt-1 text-sm text-slate-500">
-            {ucSchools.length} campuses with institutional data from College
-            Scorecard
+            {ivySchools.length} schools with institutional data from College Scorecard
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {ucSchools.map((school) => {
+            {ivySchools.map((school) => {
               const schoolStats = perSchoolStatsMap.get(school.id);
               return (
                 <div key={school.id} className="relative">
@@ -274,22 +326,20 @@ export default async function UCSchoolsPage() {
           </div>
         </section>
 
-        {/* Keyword-rich comparison table — each row links to the campus detail page
-            with "[Campus] acceptance rate" anchor text so Google can associate the
-            individual school pages with that exact query. */}
+        {/* Keyword-rich comparison table — same pattern as /uc-schools */}
         <section className="mt-10 border-t border-white/5 pt-8">
           <h2 className="text-xl font-bold text-white">
-            UC Campuses Ranked by Acceptance Rate
+            Ivy League Schools Ranked by Acceptance Rate
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Most selective to least selective — click any campus for full admissions data
+            Most selective to least selective — click any school for full admissions data
           </p>
           <div className="mt-4 overflow-x-auto rounded-2xl border border-white/5">
             <table className="w-full text-sm">
               <thead className="bg-slate-900/80">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Campus
+                    School
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-400">
                     Acceptance Rate
@@ -303,7 +353,7 @@ export default async function UCSchoolsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {[...ucSchools]
+                {[...ivySchools]
                   .sort((schoolA, schoolB) => {
                     const rateA = schoolA.acceptanceRate
                       ? parseFloat(schoolA.acceptanceRate)
@@ -314,10 +364,8 @@ export default async function UCSchoolsPage() {
                     return rateA - rateB;
                   })
                   .map((school) => {
-                    const campusShortName = school.name.replace(
-                      "University of California-",
-                      "UC "
-                    );
+                    const shortName =
+                      IVY_SHORT_NAMES[school.name] ?? school.name;
                     return (
                       <tr
                         key={school.id}
@@ -328,7 +376,7 @@ export default async function UCSchoolsPage() {
                             href={`/schools/${school.slug ?? school.id}`}
                             className="font-medium text-violet-300 hover:text-violet-200"
                           >
-                            {campusShortName} acceptance rate
+                            {shortName} acceptance rate
                           </Link>
                         </td>
                         <td className="px-4 py-3 text-right font-semibold text-emerald-400">
@@ -348,20 +396,18 @@ export default async function UCSchoolsPage() {
           </div>
         </section>
 
-        {/* UC-specific context */}
+        {/* Ivy-specific context */}
         <section className="mt-10 rounded-2xl border border-white/5 bg-slate-900/50 p-6">
-          <h2 className="font-semibold text-white">
-            Why UC Admissions Are Different
-          </h2>
+          <h2 className="font-semibold text-white">About the Ivy League</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="flex gap-3">
               <span className="mt-0.5 shrink-0 text-violet-400">&#8226;</span>
               <div>
                 <p className="text-sm font-medium text-slate-300">
-                  No Early Decision or Early Action
+                  Ivy Day decisions release in late March
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  All UC applications are Regular Decision only
+                  All 8 Ivies announce Regular Decision results on the same day
                 </p>
               </div>
             </div>
@@ -369,10 +415,10 @@ export default async function UCSchoolsPage() {
               <span className="mt-0.5 shrink-0 text-violet-400">&#8226;</span>
               <div>
                 <p className="text-sm font-medium text-slate-300">
-                  Decisions vary by major
+                  Lowest acceptance rates in the country
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Acceptance rates can differ significantly by department
+                  Most Ivies admit fewer than 7% of applicants
                 </p>
               </div>
             </div>
@@ -380,10 +426,10 @@ export default async function UCSchoolsPage() {
               <span className="mt-0.5 shrink-0 text-violet-400">&#8226;</span>
               <div>
                 <p className="text-sm font-medium text-slate-300">
-                  Separate UC application
+                  All offer Early Action or Early Decision
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  UCs use their own application, not the Common App
+                  ED/REA acceptance rates are typically 2-3x higher than RD
                 </p>
               </div>
             </div>
@@ -391,10 +437,10 @@ export default async function UCSchoolsPage() {
               <span className="mt-0.5 shrink-0 text-violet-400">&#8226;</span>
               <div>
                 <p className="text-sm font-medium text-slate-300">
-                  Test-Free (permanent policy)
+                  Need-blind for U.S. applicants
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  SAT/ACT scores are not required or considered in UC admissions
+                  All 8 Ivies meet 100% of demonstrated financial need
                 </p>
               </div>
             </div>
@@ -406,16 +452,16 @@ export default async function UCSchoolsPage() {
           <h2 className="text-lg font-semibold text-white">Explore More</h2>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
-              href="/colleges/state/california"
+              href="/uc-schools"
               className="rounded-lg border border-white/5 px-4 py-2.5 text-sm text-slate-400 transition-colors hover:border-violet-500/30 hover:text-white"
             >
-              All California Colleges
+              UC Schools
             </Link>
             <Link
-              href="/mit"
+              href="/colleges/acceptance-rate/under-10"
               className="rounded-lg border border-white/5 px-4 py-2.5 text-sm text-slate-400 transition-colors hover:border-violet-500/30 hover:text-white"
             >
-              MIT Admissions Data
+              Under 10% Acceptance
             </Link>
             <Link
               href="/chances"
@@ -431,8 +477,43 @@ export default async function UCSchoolsPage() {
             </Link>
           </div>
         </section>
+
+        {/* FAQ Section */}
+        <section className="mt-16 border-t border-white/5 pt-8">
+          <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>
+          <dl className="mt-6 space-y-6">
+            <div>
+              <dt className="text-base font-semibold text-white">
+                Which schools are in the Ivy League?
+              </dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                The Ivy League is made up of 8 schools: Brown University, Columbia
+                University, Cornell University, Dartmouth College, Harvard University,
+                Princeton University, University of Pennsylvania, and Yale University.
+              </dd>
+            </div>
+            {avgInstitutionalAcceptanceRate && (
+              <div>
+                <dt className="text-base font-semibold text-white">
+                  What is the average Ivy League acceptance rate?
+                </dt>
+                <dd className="mt-2 text-sm text-slate-400">
+                  The average acceptance rate across the 8 Ivy League schools is{" "}
+                  {avgInstitutionalAcceptanceRate}%, based on the most recent reported
+                  data.
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-base font-semibold text-white">What is Ivy Day?</dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                Ivy Day is the day in late March when all 8 Ivy League schools release
+                their Regular Decision admissions decisions simultaneously.
+              </dd>
+            </div>
+          </dl>
+        </section>
       </main>
     </div>
   );
 }
-

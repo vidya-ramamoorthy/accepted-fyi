@@ -403,3 +403,25 @@ export const getSchoolsByNamePattern = (pattern: string, cacheKey: string) =>
     [`schools-pattern-${cacheKey}`],
     { revalidate: 3600, tags: ["schools-pattern"] }
   )();
+
+// ─── Exact-name lookup (for hub pages of explicit school sets like Ivies) ────
+
+async function fetchSchoolsByExactNames(names: readonly string[]) {
+  if (names.length === 0) return [];
+  const db = getDb();
+  return db
+    .select(SCHOOL_CARD_SELECT)
+    .from(schools)
+    .where(inArray(schools.name, names as string[]))
+    .orderBy(schools.name);
+}
+
+export const getSchoolsByExactNames = (
+  names: readonly string[],
+  cacheKey: string
+) =>
+  unstable_cache(
+    () => fetchSchoolsByExactNames(names),
+    [`schools-exact-names-${cacheKey}`],
+    { revalidate: 3600, tags: ["schools-pattern"] }
+  )();

@@ -72,11 +72,38 @@ export default async function StateAcceptanceRatePage({ params }: StateAcceptanc
     ],
   };
 
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: `How many ${state.name} colleges have a ${range.label} acceptance rate?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `There are ${matchingSchools.length} colleges in ${state.name} with acceptance rates between ${range.min}% and ${range.max}%.`,
+        },
+      },
+      {
+        "@type": "Question",
+        name: `What is a ${range.label} acceptance rate considered?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `A ${range.label} acceptance rate means that schools in this range admit between ${range.min}% and ${range.max}% of applicants. ${state.name} has ${matchingSchools.length} colleges in this tier.`,
+        },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
@@ -138,6 +165,32 @@ export default async function StateAcceptanceRatePage({ params }: StateAcceptanc
               </Link>
             ))}
           </div>
+        </section>
+
+        {/* FAQ Section — visible companion to the FAQ JSON-LD above */}
+        <section className="mt-16 border-t border-white/5 pt-8">
+          <h2 className="text-xl font-bold text-white">Frequently Asked Questions</h2>
+          <dl className="mt-6 space-y-6">
+            <div>
+              <dt className="text-base font-semibold text-white">
+                How many {state.name} colleges have a {range.label} acceptance rate?
+              </dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                There are {matchingSchools.length} colleges in {state.name} with
+                acceptance rates between {range.min}% and {range.max}%.
+              </dd>
+            </div>
+            <div>
+              <dt className="text-base font-semibold text-white">
+                What is a {range.label} acceptance rate considered?
+              </dt>
+              <dd className="mt-2 text-sm text-slate-400">
+                A {range.label} acceptance rate means that schools in this range
+                admit between {range.min}% and {range.max}% of applicants.
+                {state.name} has {matchingSchools.length} colleges in this tier.
+              </dd>
+            </div>
+          </dl>
         </section>
 
         <section className="mt-8 border-t border-white/5 pt-8">
