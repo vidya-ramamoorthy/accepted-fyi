@@ -248,6 +248,10 @@ export default function SubmitPage() {
       <PostSubmissionSharePrompt
         submissionId={submittedSubmissionId}
         schoolName={schoolName}
+        hasGpa={gpaUnweighted !== ""}
+        hasSat={satScore !== ""}
+        hasAct={actScore !== ""}
+        hasState={stateOfResidence !== ""}
       />
     );
   }
@@ -288,7 +292,7 @@ export default function SubmitPage() {
 
           <div>
             <label htmlFor="schoolName" className="block text-sm font-medium text-slate-300">
-              School Name
+              College / University You Applied To
             </label>
             <SchoolAutocomplete
               id="schoolName"
@@ -303,7 +307,7 @@ export default function SubmitPage() {
             />
             <FieldError message={fieldErrors.schoolName} />
             <p className="mt-1 text-xs text-slate-500">
-              Start typing to see suggestions, or enter any school name
+              The college you received a decision from — start typing to see suggestions
             </p>
           </div>
 
@@ -769,9 +773,17 @@ export default function SubmitPage() {
 function PostSubmissionSharePrompt({
   submissionId,
   schoolName,
+  hasGpa,
+  hasSat,
+  hasAct,
+  hasState,
 }: {
   submissionId: string;
   schoolName: string;
+  hasGpa: boolean;
+  hasSat: boolean;
+  hasAct: boolean;
+  hasState: boolean;
 }) {
   const cardImageUrl = `/api/og/card/${submissionId}`;
 
@@ -804,7 +816,14 @@ function PostSubmissionSharePrompt({
 
       {/* Share actions */}
       <div className="mt-6 flex items-center justify-center">
-        <ShareCardButton submissionId={submissionId} schoolName={schoolName} />
+        <ShareCardButton
+          submissionId={submissionId}
+          schoolName={schoolName}
+          hasGpa={hasGpa}
+          hasSat={hasSat}
+          hasAct={hasAct}
+          hasState={hasState}
+        />
       </div>
 
       {/* Continue link */}

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="fyiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark slate background -->
+  <circle cx="200" cy="200" r="200" fill="#0f172a"/>
+  <circle cx="200" cy="200" r="196" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
+
+  <!-- "accepted" in white -->
+  <text x="200" y="190" text-anchor="middle" dominant-baseline="central"
+        font-family="'Helvetica Neue', Arial, sans-serif" font-weight="800"
+        font-size="56" fill="#ffffff" letter-spacing="-1">accepted</text>
+
+  <!-- ".fyi" in gradient -->
+  <text x="200" y="250" text-anchor="middle" dominant-baseline="central"
+        font-family="'Helvetica Neue', Arial, sans-serif" font-weight="800"
+        font-size="56" fill="url(#fyiGrad)" letter-spacing="-1">.fyi</text>
+</svg>

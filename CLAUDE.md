@@ -239,8 +239,8 @@
 
 **Results (as of Feb 2026):**
 - 13,977 posts fetched (2018–2026)
-- ~660 posts parseable (many posts are discussion/meta, not results)
-- ~3,100+ individual admission outcomes inserted
+- ~4,300 posts parseable (improved parser handles plain-text headers, inline "School - Decision" format)
+- ~31,000+ individual admission outcomes inserted (~10,600 from recent 2 cycles)
 - Covers cycles from 2019-2020 through 2025-2026
 - Top schools: Stanford, UCLA, UC Berkeley, UPenn, Yale, Princeton, Harvard, Cornell, Columbia, Michigan
 

@@ -1,0 +1,172 @@
+{
+  "slug": "waitlist-2026",
+  "title": "The Waitlist Gap — Class of 2030",
+  "palette": {
+    "background": "#0f172a",
+    "primary": "#f8fafc",
+    "muted": "#94a3b8",
+    "subtle": "#64748b",
+    "accent": "#f59e0b",
+    "accentContrast": "#fef3c7"
+  },
+  "methodology": {
+    "sampleSize": 232,
+    "cycles": ["2024-2025", "2025-2026"],
+    "source": "reported outcomes from r/collegeresults and student submissions; institutional waitlist data from Common Data Set filings",
+    "limitations": "many top schools do not publish waitlist outcomes; off-waitlist admit rates below are computed from admitted / offered and understate the real rate (not all offered accept the waitlist)"
+  },
+  "topSchools": [
+    { "name": "Michigan-Ann Arbor", "waitlisted": 13 },
+    { "name": "UCLA", "waitlisted": 11 },
+    { "name": "UC Berkeley", "waitlisted": 9 },
+    { "name": "Northwestern", "waitlisted": 9 },
+    { "name": "Columbia", "waitlisted": 9 },
+    { "name": "Cornell", "waitlisted": 8 },
+    { "name": "Harvard", "waitlisted": 8 },
+    { "name": "UVA", "waitlisted": 8 },
+    { "name": "Yale", "waitlisted": 7 },
+    { "name": "UChicago", "waitlisted": 7 }
+  ],
+  "institutionalWaitlist": [
+    { "name": "Michigan", "offered": null, "admitted": 973 },
+    { "name": "Cornell", "offered": 6166, "admitted": 362 },
+    { "name": "UVA", "offered": 10470, "admitted": 242 },
+    { "name": "Stanford", "offered": 506, "admitted": 76 },
+    { "name": "Brown", "offered": null, "admitted": 73 },
+    { "name": "Johns Hopkins", "offered": 1748, "admitted": 71 },
+    { "name": "Northwestern", "offered": null, "admitted": 59 },
+    { "name": "Princeton", "offered": 1032, "admitted": 52 },
+    { "name": "UPenn", "offered": 2288, "admitted": 40 },
+    { "name": "MIT", "offered": 558, "admitted": 32 },
+    { "name": "Yale", "offered": 899, "admitted": 0 },
+    { "name": "Dartmouth", "offered": 1606, "admitted": 0 }
+  ],
+  "aggregate": {
+    "offered": 25273,
+    "admitted": 1980,
+    "schoolCount": 12,
+    "notes": "Brown, Michigan, and Northwestern publish admitted but not offered counts. UCLA, UChicago, Harvard, and Columbia do not publish C2 waitlist data at all."
+  },
+  "michiganVsIvies": {
+    "michigan": 973,
+    "ivyPlusCombined": 706,
+    "ivyPlusSchools": ["Cornell", "Stanford", "Brown", "Johns Hopkins", "Princeton", "UPenn", "MIT", "Yale", "Dartmouth"]
+  },
+  "carousel": [
+    {
+      "slide": 1,
+      "type": "hook",
+      "headline": "232 waitlisted seniors.",
+      "sub": "0 know how it ended.",
+      "chart": null
+    },
+    {
+      "slide": 2,
+      "type": "setup",
+      "headline": "Waitlists are the admissions gap nobody tracks.",
+      "sub": "We're building the first public record. Class of 2030 data is being collected now.",
+      "chart": null
+    },
+    {
+      "slide": 3,
+      "type": "finding",
+      "headline": "The top 10 waitlisted schools in our data",
+      "sub": "Last 2 cycles. Waitlisted students, all reported.",
+      "chart": { "type": "bar", "key": "topSchools", "xField": "name", "yField": "waitlisted" }
+    },
+    {
+      "slide": 4,
+      "type": "finding",
+      "headline": "Cornell offered 6,166 waitlist spots last year.",
+      "sub": "They admitted 362 off it.",
+      "chart": { "type": "stat-block", "key": "cornell", "valueField": "admitted", "totalField": "offered" }
+    },
+    {
+      "slide": 5,
+      "type": "finding",
+      "headline": "Yale took 0 off the waitlist.",
+      "sub": "Dartmouth too. From 2,500+ combined waitlisted students.",
+      "chart": { "type": "stat-block", "key": "yaleDartmouth", "primary": "0" }
+    },
+    {
+      "slide": 6,
+      "type": "finding",
+      "headline": "Every school's waitlist works differently.",
+      "sub": "Some take hundreds. Some take none. Most never publish it.",
+      "chart": { "type": "compare-bar", "key": "institutionalWaitlist", "xField": "name", "yField": "admitted" }
+    },
+    {
+      "slide": 7,
+      "type": "surprise",
+      "headline": "Michigan admitted 973 off its waitlist last year.",
+      "sub": "That's more than Cornell, Stanford, Brown, JHU, Northwestern, Princeton, UPenn, MIT, Yale, and Dartmouth combined (706).",
+      "chart": null
+    },
+    {
+      "slide": 8,
+      "type": "meaning",
+      "headline": "Knowing which waitlists actually move matters.",
+      "sub": "Your statistical reality is very different at Cornell than at Yale.",
+      "chart": null
+    },
+    {
+      "slide": 9,
+      "type": "methodology",
+      "headline": "How we got these numbers",
+      "sub": "Student waitlists: 232 submissions from 2024-25 and 2025-26, sourced from r/collegeresults and on-site submissions. Institutional numbers: 12 schools' most recent Common Data Set filings, scraped directly from their institutional research pages. Some schools (UCLA, Harvard, UChicago, Columbia) do not publish waitlist data.",
+      "chart": null
+    },
+    {
+      "slide": 10,
+      "type": "cta",
+      "headline": "If you are waitlisted, log it.",
+      "sub": "When you hear back, update it. Help build the first public waitlist tracker.",
+      "chart": null
+    }
+  ],
+  "video": {
+    "durationSeconds": 30,
+    "scenes": [
+      {
+        "id": "hook",
+        "startSeconds": 0,
+        "endSeconds": 3,
+        "onScreenText": "232 waitlisted seniors.\n0 outcomes tracked.",
+        "voiceover": "Two hundred and thirty-two seniors were waitlisted last cycle. None of them know how it ended.",
+        "visual": "headline-text"
+      },
+      {
+        "id": "setup",
+        "startSeconds": 3,
+        "endSeconds": 8,
+        "onScreenText": "Nobody tracks waitlist outcomes.",
+        "voiceover": "Waitlists are the biggest gap in college admissions data.",
+        "visual": "headline-text"
+      },
+      {
+        "id": "cornell",
+        "startSeconds": 8,
+        "endSeconds": 15,
+        "onScreenText": "Cornell: 6,166 offered.\nAdmitted: 362.",
+        "voiceover": "Cornell offered over six thousand waitlist spots last year. Admitted three hundred sixty-two.",
+        "visual": "stat-block"
+      },
+      {
+        "id": "yale-dartmouth",
+        "startSeconds": 15,
+        "endSeconds": 22,
+        "onScreenText": "Yale: 0.\nDartmouth: 0.",
+        "voiceover": "Yale and Dartmouth took nobody off their waitlists.",
+        "visual": "stat-block"
+      },
+      {
+        "id": "cta",
+        "startSeconds": 22,
+        "endSeconds": 30,
+        "onScreenText": "Log your waitlist.\naccepted.fyi",
+        "voiceover": "If you're waitlisted this year, log it. Help us build the first public waitlist tracker. accepted dot fyi.",
+        "visual": "cta"
+      }
+    ]
+  }
+}

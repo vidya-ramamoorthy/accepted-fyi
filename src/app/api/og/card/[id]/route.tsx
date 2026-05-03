@@ -2,7 +2,16 @@ import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { getVisibleSubmissionById } from "@/lib/db/queries/submissions";
+import {
+  getVisibleSubmissionById,
+  getSubmissionStatsForSchool,
+} from "@/lib/db/queries/submissions";
+import {
+  buildCardStatItems,
+  filterCardStatItems,
+  parseHiddenFields,
+} from "@/lib/cards/card-utils";
+import { getSchoolBrandColor } from "@/lib/constants/school-colors";
 import DecisionCardLayout from "@/components/cards/DecisionCardLayout";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,14 +45,29 @@ export async function GET(
     }
 
     const size = request.nextUrl.searchParams.get("size");
+    const hideParam = request.nextUrl.searchParams.get("hide");
     const isStory = size === "story";
     const width = isStory ? STORY_WIDTH : OG_WIDTH;
     const height = isStory ? STORY_HEIGHT : OG_HEIGHT;
 
-    const [interBold, interRegular] = await Promise.all([
+    // Build stat items, then filter by hidden fields
+    const allStatItems = buildCardStatItems({
+      gpaUnweighted: submission.gpaUnweighted,
+      satScore: submission.satScore,
+      actScore: submission.actScore,
+      stateOfResidence: submission.stateOfResidence,
+    });
+    const hiddenFields = parseHiddenFields(hideParam);
+    const visibleStatItems = filterCardStatItems(allStatItems, hiddenFields);
+
+    // Fetch community stats + fonts in parallel
+    const [interBold, interRegular, communityStats] = await Promise.all([
       loadFont("Inter-Bold.ttf"),
       loadFont("Inter-Regular.ttf"),
+      getSubmissionStatsForSchool(submission.schoolId),
     ]);
+
+    const schoolColor = getSchoolBrandColor(submission.schoolName);
 
     const imageResponse = new ImageResponse(
       <DecisionCardLayout
@@ -56,6 +80,10 @@ export async function GET(
           applicationRound: submission.applicationRound,
           admissionCycle: submission.admissionCycle,
           intendedMajor: submission.intendedMajor,
+          statItems: visibleStatItems,
+          schoolColor,
+          communityAccepted: communityStats?.acceptedCount ?? null,
+          communityTotal: communityStats?.totalCount ?? null,
         }}
         variant={isStory ? "story" : "og"}
       />,

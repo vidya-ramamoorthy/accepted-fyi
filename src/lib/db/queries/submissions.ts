@@ -311,10 +311,15 @@ export const getSubmissionsForSchool = (schoolId: string, page: number = 1) =>
 
 const cardSubmissionFields = {
   id: admissionSubmissions.id,
+  schoolId: admissionSubmissions.schoolId,
   decision: admissionSubmissions.decision,
   applicationRound: admissionSubmissions.applicationRound,
   admissionCycle: admissionSubmissions.admissionCycle,
   intendedMajor: admissionSubmissions.intendedMajor,
+  gpaUnweighted: admissionSubmissions.gpaUnweighted,
+  satScore: admissionSubmissions.satScore,
+  actScore: admissionSubmissions.actScore,
+  stateOfResidence: admissionSubmissions.stateOfResidence,
   verificationTier: admissionSubmissions.verificationTier,
   schoolName: schools.name,
   schoolState: schools.state,

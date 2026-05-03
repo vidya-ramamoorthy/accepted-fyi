@@ -111,14 +111,34 @@ interface ParsedPost {
 // ─── Parsing Helpers ─────────────────────────────────────────────────────────
 
 function extractSection(text: string, sectionName: string): string | null {
-  // Match **Section Name** or **Section Name(s)** variations
   const escapedName = sectionName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const sectionPattern = new RegExp(
+
+  // Approach 1: Bold markdown — **Section Name** or **Section Name(s)**
+  const boldPattern = new RegExp(
     `\\*\\*${escapedName}[^*]*\\*\\*[:\\s]*([\\s\\S]*?)(?=\\*\\*[A-Z]|$)`,
     "i"
   );
-  const match = text.match(sectionPattern);
-  return match ? match[1].trim() : null;
+  const boldMatch = text.match(boldPattern);
+  if (boldMatch) return boldMatch[1].trim();
+
+  // Approach 2: Hash headers — # Section Name or ## Section Name
+  const hashPattern = new RegExp(
+    `^#+\\s*${escapedName}[^\\n]*\\n([\\s\\S]*?)(?=^#+\\s|$)`,
+    "im"
+  );
+  const hashMatch = text.match(hashPattern);
+  if (hashMatch) return hashMatch[1].trim();
+
+  // Approach 3: Plain text headers — "Section Name:" or "Section Name" on its own line
+  // followed by content until the next section-like header
+  const plainPattern = new RegExp(
+    `(?:^|\\n)\\s*${escapedName}\\s*:?\\s*\\n([\\s\\S]*?)(?=\\n\\s*(?:Demographics|Academics|Background|Stats|Standardized Testing|Testing|Extracurriculars|Activities|Awards|Decisions|Acceptances?|Rejections?|Waitlist|Results|Intended Major|Additional|Final Thoughts)\\s*:?\\s*\\n|$)`,
+    "i"
+  );
+  const plainMatch = text.match(plainPattern);
+  if (plainMatch) return plainMatch[1].trim();
+
+  return null;
 }
 
 function extractFieldValue(sectionText: string, fieldName: string): string | null {
@@ -324,6 +344,7 @@ function extractSchoolFromLine(line: string): { schoolName: string; applicationR
   // Clean up school name: remove parentheses content, extra punctuation
   schoolName = schoolName
     .replace(/\([^)]*\)/g, "")      // remove parenthetical notes
+    .replace(/\(.*$/g, "")          // remove unclosed trailing parenthesis: "MIT (" → "MIT"
     .replace(/\[[^\]]*\]/g, "")      // remove bracketed notes like [waitlisted]
     .replace(/[*_~`#>!]/g, "")       // remove markdown formatting + spoiler chars
     .replace(/\s*[-–—]+\s*(?:pending|deferred|rejected|accepted|waitlisted|denied|committed|withdrew|withdrawn|declined).*$/i, "") // remove "– pending", "– deferred", etc.
@@ -359,7 +380,7 @@ function extractSchoolFromLine(line: string): { schoolName: string; applicationR
     schoolName.length < 3 ||
     schoolName.length > 100 ||
     wordCount > 8 ||
-    /^(list|none|n\/a|pending|waiting|final thoughts|additional|overall|comments|tldr|thank|okay|most|after|the |where|i |my |not )/i.test(schoolName) ||
+    /^(list|none|n\/a|pending|waiting|final thoughts|additional|overall|comments|tldr|thank|okay|most|after|the |where|i |my |not |results?$|decisions?$|what |how |why )/i.test(schoolName) ||
     /[.!?]$/.test(schoolName)
   ) {
     return null;
@@ -404,17 +425,17 @@ function parseDecisions(text: string): ParsedDecision[] {
     if (templateHeaderMatch) sectionText = templateHeaderMatch[1];
   }
 
-  // Approach 3: Look for italic or bold acceptance/rejection subsections directly in the full text
-  // Many posts don't have a parent "Decisions" section — they jump straight to *Acceptances:*
+  // Approach 3: Look for italic, bold, or plain-text acceptance/rejection subsections directly in the full text
+  // Many posts don't have a parent "Decisions" section — they jump straight to *Acceptances:* or Accepted:
   if (!sectionText) {
     const hasSubsections =
-      /\*?\*?Acceptances?\*?\*?:?/i.test(text) ||
-      /\*?\*?Rejections?\*?\*?:?/i.test(text) ||
-      /\*?\*?Waitlist(?:ed|s)?\*?\*?:?/i.test(text);
+      /[\*_]{0,2}(?:Acceptances?|Accepted)[\*_]{0,2}:?/i.test(text) ||
+      /[\*_]{0,2}(?:Rejections?|Rejected)[\*_]{0,2}:?/i.test(text) ||
+      /[\*_]{0,2}Waitlist(?:ed|s)?[\*_]{0,2}:?/i.test(text);
     if (hasSubsections) {
       // Use the full text from the first subsection onward
       const firstSubsectionMatch = text.match(
-        /(\*?\*?(?:Acceptances?|Rejections?|Waitlist(?:ed|s)?|Deferred?)\*?\*?:?[\s\S]*)$/i
+        /([\*_]{0,2}(?:Acceptances?|Accepted|Rejections?|Rejected|Waitlist(?:ed|s)?|Deferred?)[\*_]{0,2}:?[\s\S]*)$/i
       );
       if (firstSubsectionMatch) sectionText = firstSubsectionMatch[1];
     }
@@ -428,19 +449,46 @@ function parseDecisions(text: string): ParsedDecision[] {
     if (hashMatch) sectionText = hashMatch[1];
   }
 
-  if (!sectionText) return decisions;
-
+  // If no section text found, skip to inline fallback at end of function
+  if (sectionText) {
   // Parse acceptance, waitlist, rejection sub-sections
-  // These patterns handle bold (**), italic (*), or plain text headers
-  const decisionTypes: Array<{ pattern: RegExp; decision: ParsedDecision["decision"] }> = [
-    { pattern: /\*?\*?Acceptances?\*?\*?:?\s*\n([\s\S]*?)(?=\*?\*?(?:Waitlist|Rejection|Deferred|Additional|Final|Where|$)|\n\s*\n\s*\*?\*?[A-Z])/i, decision: "accepted" },
-    { pattern: /\*?\*?Waitlist(?:ed|s)?\*?\*?:?\s*\n([\s\S]*?)(?=\*?\*?(?:Acceptance|Rejection|Deferred|Additional|Final|Where|$)|\n\s*\n\s*\*?\*?[A-Z])/i, decision: "waitlisted" },
-    { pattern: /\*?\*?Rejections?\*?\*?:?\s*\n([\s\S]*?)(?=\*?\*?(?:Acceptance|Waitlist|Deferred|Additional|Final|Where|$)|\n\s*\n\s*\*?\*?[A-Z])/i, decision: "rejected" },
-    { pattern: /\*?\*?Deferred?\*?\*?:?\s*\n([\s\S]*?)(?=\*?\*?(?:Acceptance|Waitlist|Rejection|Additional|Final|Where|$)|\n\s*\n\s*\*?\*?[A-Z])/i, decision: "deferred" },
+  // Pattern handles bold (**X**), italic (*X*), plain text (X:), and mixed (colon inside or outside markers)
+  // The [\*_]{0,2} handles 0-2 asterisks/underscores for opening/closing markdown
+  const decisionTypes: Array<{ patterns: RegExp[]; decision: ParsedDecision["decision"] }> = [
+    {
+      patterns: [
+        /[\*_]{0,2}Acceptances?[\*_]{0,2}:?[\*_]{0,2}\s*\n([\s\S]*?)(?=[\*_]{0,2}(?:Waitlist|Rejection|Rejected|Deferred|Additional|Final|Where|$)|\n\s*\n\s*[\*_]{0,2}[A-Z])/i,
+        /[\*_]{0,2}Accepted[\*_]{0,2}:?[\*_]{0,2}\s*\n([\s\S]*?)(?=[\*_]{0,2}(?:Waitlist|Rejection|Rejected|Deferred|Additional|Final|Where|$)|\n\s*\n\s*[\*_]{0,2}[A-Z])/i,
+      ],
+      decision: "accepted",
+    },
+    {
+      patterns: [
+        /[\*_]{0,2}Waitlist(?:ed|s)?[\*_]{0,2}:?[\*_]{0,2}\s*\n([\s\S]*?)(?=[\*_]{0,2}(?:Acceptance|Accepted|Rejection|Rejected|Deferred|Additional|Final|Where|$)|\n\s*\n\s*[\*_]{0,2}[A-Z])/i,
+      ],
+      decision: "waitlisted",
+    },
+    {
+      patterns: [
+        /[\*_]{0,2}Rejections?[\*_]{0,2}:?[\*_]{0,2}\s*\n([\s\S]*?)(?=[\*_]{0,2}(?:Acceptance|Accepted|Waitlist|Deferred|Additional|Final|Where|$)|\n\s*\n\s*[\*_]{0,2}[A-Z])/i,
+        /[\*_]{0,2}Rejected[\*_]{0,2}:?[\*_]{0,2}\s*\n([\s\S]*?)(?=[\*_]{0,2}(?:Acceptance|Accepted|Waitlist|Deferred|Additional|Final|Where|$)|\n\s*\n\s*[\*_]{0,2}[A-Z])/i,
+      ],
+      decision: "rejected",
+    },
+    {
+      patterns: [
+        /[\*_]{0,2}Deferred?[\*_]{0,2}:?[\*_]{0,2}\s*\n([\s\S]*?)(?=[\*_]{0,2}(?:Acceptance|Accepted|Waitlist|Rejection|Rejected|Additional|Final|Where|$)|\n\s*\n\s*[\*_]{0,2}[A-Z])/i,
+      ],
+      decision: "deferred",
+    },
   ];
 
-  for (const { pattern, decision } of decisionTypes) {
-    const match = sectionText.match(pattern);
+  for (const { patterns, decision } of decisionTypes) {
+    let match: RegExpMatchArray | null = null;
+    for (const pattern of patterns) {
+      match = sectionText.match(pattern);
+      if (match) break;
+    }
     if (!match) continue;
 
     const schoolLines = match[1].trim().split("\n");
@@ -453,6 +501,45 @@ function parseDecisions(text: string): ParsedDecision[] {
         decision,
         applicationRound: extracted.applicationRound,
       });
+    }
+  }
+
+  // If section-based parsing found nothing, try inline "School - Decision" format
+  // e.g., "MIT - Accepted", "UCLA: Rejected", "Stanford — Waitlisted"
+  if (decisions.length === 0) {
+    const inlinePattern = /(?:^|\n)\s*[\*\-•]*\s*(.+?)\s*[-–—:]\s*(Accepted|Rejected|Waitlisted|Deferred)/gim;
+    let inlineMatch;
+    while ((inlineMatch = inlinePattern.exec(sectionText)) !== null) {
+      const rawSchoolName = inlineMatch[1].trim();
+      const rawDecision = inlineMatch[2].toLowerCase() as ParsedDecision["decision"];
+      const extracted = extractSchoolFromLine(rawSchoolName);
+      if (extracted) {
+        decisions.push({
+          schoolName: extracted.schoolName,
+          decision: rawDecision,
+          applicationRound: extracted.applicationRound,
+        });
+      }
+    }
+  }
+
+  } // end if (sectionText)
+
+  // Last resort: try inline pattern on the full text if sectionText parsing failed
+  if (decisions.length === 0) {
+    const fullTextInlinePattern = /(?:^|\n)\s*[\*\-•]*\s*(.+?)\s*[-–—:]\s*(Accepted|Rejected|Waitlisted|Deferred)/gim;
+    let fullMatch;
+    while ((fullMatch = fullTextInlinePattern.exec(text)) !== null) {
+      const rawSchoolName = fullMatch[1].trim();
+      const rawDecision = fullMatch[2].toLowerCase() as ParsedDecision["decision"];
+      const extracted = extractSchoolFromLine(rawSchoolName);
+      if (extracted) {
+        decisions.push({
+          schoolName: extracted.schoolName,
+          decision: rawDecision,
+          applicationRound: extracted.applicationRound,
+        });
+      }
     }
   }
 
@@ -511,7 +598,7 @@ function parsePost(post: RedditPost): ParsedPost | null {
   if (!text || text.length < 100) return null;
 
   // Must have at least a Decisions section to be useful
-  // Matches: **Decisions**, **Decisions (indicate ED/EA/...)**, *Acceptances:*, # Results, etc.
+  // Matches: **Decisions**, *Acceptances:*, # Results, plain-text headers, inline "School - Decision"
   const hasDecisions =
     /\*\*Decisions?[\s(][^*]*\*\*/i.test(text) ||   // **Decisions (indicate...)** (official template)
     /\*\*Decisions?\*\*/i.test(text) ||               // **Decisions**
@@ -524,17 +611,25 @@ function parsePost(post: RedditPost): ParsedPost | null {
     /\*\*Accepted:?\*\*/i.test(text) ||               // **Accepted:**
     /\*\*Rejected:?\*\*/i.test(text) ||               // **Rejected:**
     /^#+\s*.*(?:results?|decisions?)/im.test(text) || // # Results, ## Decisions
-    /\*\*(?:EA|ED|RD)\s*Schools?:?\*\*/i.test(text);  // **EA Schools:**
+    /\*\*(?:EA|ED|RD)\s*Schools?:?\*\*/i.test(text) || // **EA Schools:**
+    // Plain-text headers at line start (no bold/italic markers)
+    /(?:^|\n)\s*(?:Decisions?|Results?)\s*:\s*\n/i.test(text) ||
+    /(?:^|\n)\s*(?:Acceptances?|Accepted)\s*:\s*\n/i.test(text) ||
+    /(?:^|\n)\s*(?:Rejections?|Rejected)\s*:\s*\n/i.test(text) ||
+    /(?:^|\n)\s*(?:Waitlist(?:ed|s)?|Deferred)\s*:\s*\n/i.test(text) ||
+    // Inline format: "School — Accepted" or "School: Accepted" (3+ lines = likely results post)
+    (text.match(/(?:^|\n)\s*[\w\s.&'()-]+\s*[-–—:]\s*(?:Accepted|Rejected|Waitlisted|Deferred)/gim) || []).length >= 3;
   if (!hasDecisions) return null;
 
-  const demographicsText = extractSection(text, "Demographics") || "";
-  const academicsText = extractSection(text, "Academics") || "";
-  const testingText = extractSection(text, "Standardized Testing") || extractSection(text, "Testing") || "";
+  const demographicsText = extractSection(text, "Demographics") || extractSection(text, "Background") || "";
+  const academicsText = extractSection(text, "Academics") || extractSection(text, "Stats") || "";
+  const testingText = extractSection(text, "Standardized Testing") || extractSection(text, "Testing") || extractSection(text, "Test Scores") || "";
   const fullAcademicsContext = academicsText + "\n" + testingText;
 
-  const gpaField = extractFieldValue(academicsText, "GPA");
+  // Try section-based GPA first, then fallback to searching the full text
+  const gpaField = extractFieldValue(academicsText, "GPA") || extractFieldValue(text, "GPA");
   const gpa = parseGpa(gpaField);
-  const courseCounts = parseApIbCount(fullAcademicsContext);
+  const courseCounts = parseApIbCount(fullAcademicsContext || text);
 
   const decisions = parseDecisions(text);
   if (decisions.length === 0) return null;
@@ -561,8 +656,8 @@ function parsePost(post: RedditPost): ParsedPost | null {
   const academics: ParsedAcademics = {
     gpaUnweighted: gpa.unweighted,
     gpaWeighted: gpa.weighted,
-    satScore: parseSat(testingText || fullAcademicsContext),
-    actScore: parseAct(testingText || fullAcademicsContext),
+    satScore: parseSat(testingText || fullAcademicsContext || text),
+    actScore: parseAct(testingText || fullAcademicsContext || text),
     apCoursesCount: courseCounts.ap,
     ibCoursesCount: courseCounts.ib,
     honorsCoursesCount: courseCounts.honors,
@@ -686,19 +781,11 @@ async function findSchoolId(
     return exactMatch[0].id;
   }
 
-  // Try case-insensitive partial match using SQL
+  // Import ilike for use in abbreviation map fallback and partial match below
   const { ilike } = await import("drizzle-orm");
-  const partialMatch = await db
-    .select({ id: schools.id, name: schools.name })
-    .from(schools)
-    .where(ilike(schools.name, `%${normalizedName}%`))
-    .limit(5);
 
-  if (partialMatch.length === 1) {
-    schoolNameCache.set(normalizedName, partialMatch[0].id);
-    return partialMatch[0].id;
-  }
-
+  // Check abbreviation map BEFORE ILIKE partial match to avoid false positives
+  // (e.g., "usc" matching "Tusculum University" via ILIKE %usc%)
   // Common abbreviation mappings
   const abbreviationMap: Record<string, string> = {
     "mit": "Massachusetts Institute of Technology",
@@ -992,10 +1079,62 @@ async function findSchoolId(
     "howard university": "Howard University",
     "spelman": "Spelman College",
     "morehouse": "Morehouse College",
+    // Round 4: from improved parser unmatched results
+    "umiami": "University of Miami",
+    "u miami": "University of Miami",
+    "university of miami": "University of Miami",
+    "fsu": "Florida State University",
+    "florida state": "Florida State University",
+    "florida state university": "Florida State University",
+    "ucf": "University of Central Florida",
+    "usf": "University of South Florida",
+    "smu": "Southern Methodist University",
+    "tcu": "Texas Christian University",
+    "uc los angeles": "University of California-Los Angeles",
+    "rutgers nb": "Rutgers University-New Brunswick",
+    "rutgers new brunswick": "Rutgers University-New Brunswick",
+    "loyola chicago": "Loyola University Chicago",
+    "loyola university chicago": "Loyola University Chicago",
+    "indiana university": "Indiana University-Bloomington",
+    "university of california san diego": "University of California-San Diego",
+    "ohio state university": "Ohio State University-Main Campus",
+    "the ohio state university": "Ohio State University-Main Campus",
+    "wesleyan": "Wesleyan University",
+    "wesleyan university": "Wesleyan University",
+    "mcgill university": "McGill University",
+    "colorado state": "Colorado State University-Fort Collins",
+    "colorado state university": "Colorado State University-Fort Collins",
+    "michigan ann arbor": "University of Michigan-Ann Arbor",
+    "michigan, ann arbor": "University of Michigan-Ann Arbor",
+    "minnesota twin cities": "University of Minnesota-Twin Cities",
+    "u of t": "University of Toronto",
+    "university of toronto": "University of Toronto",
+    "imperial college london": "Imperial College London",
+    "university college london": "University College London",
+    "ucl": "University College London",
+    "lse": "London School of Economics and Political Science",
+    "jmu": "James Madison University",
+    "drew university": "Drew University",
+    "drewuniversity": "Drew University",
+    "uvm": "University of Vermont",
+    "university of vermont": "University of Vermont",
   };
 
   const mappedName = abbreviationMap[normalizedName];
   if (mappedName) {
+    // Use exact match first (abbreviation map values should be exact DB names)
+    const exactMatch = await db
+      .select({ id: schools.id })
+      .from(schools)
+      .where(eq(schools.name, mappedName))
+      .limit(1);
+
+    if (exactMatch.length > 0) {
+      schoolNameCache.set(normalizedName, exactMatch[0].id);
+      return exactMatch[0].id;
+    }
+
+    // Fallback to ILIKE if exact match fails (handles minor name variations)
     const mappedMatch = await db
       .select({ id: schools.id })
       .from(schools)
@@ -1006,6 +1145,20 @@ async function findSchoolId(
       schoolNameCache.set(normalizedName, mappedMatch[0].id);
       return mappedMatch[0].id;
     }
+  }
+
+  // Last resort: try case-insensitive partial match using ILIKE
+  // This runs AFTER abbreviation map to avoid false positives (e.g., "usc" matching "Tusculum")
+  const partialMatch = await db
+    .select({ id: schools.id, name: schools.name })
+    .from(schools)
+    .where(ilike(schools.name, `%${normalizedName}%`))
+    .limit(5);
+
+  // Only use if exactly 1 match to avoid ambiguity
+  if (partialMatch.length === 1) {
+    schoolNameCache.set(normalizedName, partialMatch[0].id);
+    return partialMatch[0].id;
   }
 
   schoolNameCache.set(normalizedName, null);

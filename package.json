@@ -17,9 +17,17 @@
     "db:studio": "drizzle-kit studio",
     "ingest:scorecard": "tsx scripts/ingest-scorecard.ts",
     "ingest:reddit": "tsx scripts/ingest-reddit.ts",
-    "ingest:cds": "tsx scripts/ingest-cds.ts"
+    "ingest:cds": "tsx scripts/ingest-cds.ts",
+    "ingest:ivy-cds": "tsx scripts/ingest-ivy-cds.ts",
+    "remotion:studio": "remotion studio remotion/index.ts",
+    "remotion:render": "remotion render remotion/index.ts",
+    "carousel:render": "tsx scripts/render-carousel.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@remotion/bundler": "^4.0.450",
+    "@remotion/cli": "^4.0.450",
+    "@remotion/renderer": "^4.0.450",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.96.0",
     "@upstash/ratelimit": "^2.0.8",
@@ -31,7 +39,8 @@
     "postgres": "^3.4.8",
     "posthog-js": "^1.352.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "remotion": "^4.0.450"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
@@ -39,6 +48,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.4",
@@ -46,6 +56,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jsdom": "^28.1.0",
+    "pdf-parse": "^2.4.5",
     "puppeteer": "^24.37.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",

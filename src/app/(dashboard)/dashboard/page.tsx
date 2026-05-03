@@ -117,6 +117,10 @@ export default async function DashboardPage() {
                 <ShareCardButton
                   submissionId={submission.id}
                   schoolName={submission.schoolName}
+                  hasGpa={submission.gpaUnweighted !== null}
+                  hasSat={submission.satScore !== null}
+                  hasAct={submission.actScore !== null}
+                  hasState={submission.stateOfResidence !== null}
                 />
               </div>
             </div>
