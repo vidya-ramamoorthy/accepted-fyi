@@ -1099,7 +1099,6 @@ async function findSchoolId(
     "university of california san diego": "University of California-San Diego",
     "ohio state university": "Ohio State University-Main Campus",
     "the ohio state university": "Ohio State University-Main Campus",
-    "wesleyan": "Wesleyan University",
     "wesleyan university": "Wesleyan University",
     "mcgill university": "McGill University",
     "colorado state": "Colorado State University-Fort Collins",
