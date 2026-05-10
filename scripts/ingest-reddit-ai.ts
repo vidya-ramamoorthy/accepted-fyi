@@ -8,7 +8,12 @@
  *   npx tsx scripts/ingest-reddit-ai.ts --limit 100 --dry-run   # Preview 100 posts, no DB writes
  *   npx tsx scripts/ingest-reddit-ai.ts --limit 100              # Parse and insert 100 posts
  *   npx tsx scripts/ingest-reddit-ai.ts                           # Parse all remaining posts
- *   npx tsx scripts/ingest-reddit-ai.ts --after 2022-01-01       # Only posts after a date
+ *   npx tsx scripts/ingest-reddit-ai.ts --since 2026-04-01       # Only posts since a date
+ *   npx tsx scripts/ingest-reddit-ai.ts --after 2022-01-01       # Alias for --since
+ *
+ * Incremental re-runs are safe: filterNewPosts() dedups against the DB by
+ * source_post_id, and inserts use onConflictDoNothing(). Schedule weekly
+ * through waitlist movement season (May–June) with --since set to ~14 days ago.
  *
  * Prerequisites:
  *   - ANTHROPIC_API_KEY in .env.production (or environment)
@@ -57,7 +62,13 @@ function getArg(name: string): string | null {
 const DRY_RUN = args.includes("--dry-run");
 const REPROCESS = args.includes("--reprocess");
 const LIMIT = getArg("limit") ? parseInt(getArg("limit")!, 10) : null;
-const AFTER_DATE = getArg("after") ?? "2018-01-01";
+const SINCE_DATE_RAW = getArg("since") ?? getArg("after");
+const AFTER_DATE = SINCE_DATE_RAW ?? "2018-01-01";
+
+if (SINCE_DATE_RAW && Number.isNaN(new Date(SINCE_DATE_RAW).getTime())) {
+  console.error(`Invalid --since date: ${SINCE_DATE_RAW} (expected YYYY-MM-DD)`);
+  process.exit(1);
+}
 
 // ─── Init clients ───────────────────────────────────────────────────────────
 
