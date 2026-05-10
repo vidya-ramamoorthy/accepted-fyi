@@ -5,6 +5,7 @@ import { getPlatformStats } from "@/lib/db/queries/platform-stats";
 import { extractUserProfileData } from "@/lib/utils/auth-helpers";
 import SubmissionCard from "@/components/submissions/SubmissionCard";
 import ShareCardButton from "@/components/cards/ShareCardButton";
+import UpdateOutcomeButton from "@/components/submissions/UpdateOutcomeButton";
 import Link from "next/link";
 
 function formatNumber(value: number): string {
@@ -28,6 +29,10 @@ export default async function DashboardPage() {
   ]);
   const submissions = await getSubmissionsByUser(userProfile.id);
 
+  const pendingWaitlistCount = submissions.filter(
+    (submission) => submission.decision === "waitlisted" && submission.waitlistOutcome === null,
+  ).length;
+
   return (
     <div>
       {/* Community Stats */}
@@ -47,6 +52,17 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {pendingWaitlistCount > 0 && (
+        <section className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <p className="text-sm font-medium text-amber-200">
+            Waitlist movement happens through May and June.
+          </p>
+          <p className="mt-1 text-xs text-amber-300/80">
+            You have {pendingWaitlistCount} waitlisted result{pendingWaitlistCount !== 1 ? "s" : ""} with no outcome yet — update {pendingWaitlistCount !== 1 ? "them" : "it"} below if you&apos;ve heard back.
+          </p>
+        </section>
+      )}
 
       <div className="flex items-center justify-between">
         <div>
@@ -113,7 +129,13 @@ export default async function DashboardPage() {
                 willAttend={submission.willAttend}
                 waitlistOutcome={submission.waitlistOutcome}
               />
-              <div className="flex justify-end">
+              <div className="flex items-center justify-end gap-2">
+                {submission.decision === "waitlisted" && submission.waitlistOutcome === null && (
+                  <UpdateOutcomeButton
+                    submissionId={submission.id}
+                    schoolName={submission.schoolName}
+                  />
+                )}
                 <ShareCardButton
                   submissionId={submission.id}
                   schoolName={submission.schoolName}

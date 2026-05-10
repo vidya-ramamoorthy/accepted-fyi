@@ -219,6 +219,52 @@ export async function getSubmissionsByUser(userId: string) {
     .orderBy(desc(admissionSubmissions.createdAt));
 }
 
+export async function getSubmissionOwnership(
+  submissionId: string,
+): Promise<{ userId: string | null; decision: AdmissionDecision } | null> {
+  const db = getDb();
+
+  const [submission] = await db
+    .select({
+      userId: admissionSubmissions.userId,
+      decision: admissionSubmissions.decision,
+    })
+    .from(admissionSubmissions)
+    .where(eq(admissionSubmissions.id, submissionId))
+    .limit(1);
+
+  return submission ?? null;
+}
+
+export async function updateWaitlistOutcome(
+  submissionId: string,
+  userId: string,
+  outcome: WaitlistOutcome,
+): Promise<{ id: string; waitlistOutcome: WaitlistOutcome | null; schoolId: string } | null> {
+  const db = getDb();
+
+  const [updated] = await db
+    .update(admissionSubmissions)
+    .set({
+      waitlistOutcome: outcome,
+      updatedAt: sql`now()`,
+    })
+    .where(
+      and(
+        eq(admissionSubmissions.id, submissionId),
+        eq(admissionSubmissions.userId, userId),
+        eq(admissionSubmissions.decision, "waitlisted"),
+      ),
+    )
+    .returning({
+      id: admissionSubmissions.id,
+      waitlistOutcome: admissionSubmissions.waitlistOutcome,
+      schoolId: admissionSubmissions.schoolId,
+    });
+
+  return updated ?? null;
+}
+
 const SCHOOL_SUBMISSIONS_PAGE_SIZE = 20;
 
 async function fetchSubmissionStatsForSchool(schoolId: string) {

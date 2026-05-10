@@ -55,6 +55,10 @@ const VALID_WAITLIST_OUTCOMES: WaitlistOutcome[] = [
   "withdrew",
 ];
 
+export function isValidWaitlistOutcome(value: unknown): value is WaitlistOutcome {
+  return typeof value === "string" && VALID_WAITLIST_OUTCOMES.includes(value as WaitlistOutcome);
+}
+
 const ADMISSION_CYCLE_PATTERN = /^\d{4}-\d{4}$/;
 const STATE_PATTERN = /^[A-Z]{2}$/;
 
